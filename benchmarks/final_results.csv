@@ -1,0 +1,4 @@
+round_count,enc_throughput_blks,enc_latency_us,mac_overhead_us,total_latency_us,pt_avalanche_pct,key_avalanche_pct,avg_avalanche_pct,randomness_status
+27,54626.0,18.306,3.529,21.836,50.37,50.11,50.24,PASS
+20,87821.0,11.387,3.529,14.916,50.22,50.02,50.12,PASS
+12,141368.0,7.074,3.529,10.603,50.04,50.05,50.05,PASS
