@@ -655,3 +655,105 @@ body {
     font-size: 13px;
     color: var(--text-secondary);
 }
+
+/* ── System Power Controls ─────────────────────────────────────── */
+
+.power-card {
+    border-color: rgba(6, 182, 212, 0.25);
+}
+
+.power-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.power-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #090d16;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.power-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.power-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.power-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.power-desc {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.power-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Status badge (green = active) */
+.status-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-green);
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.badge-off {
+    color: var(--text-muted);
+}
+
+/* Power toggle buttons */
+.power-btn {
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.power-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.power-btn:active {
+    transform: translateY(0);
+}
+
+.btn-start {
+    background: var(--accent-green);
+    color: #fff;
+}
+
+.btn-stop {
+    background: var(--accent-red);
+    color: #fff;
+}

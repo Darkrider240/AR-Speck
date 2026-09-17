@@ -89,7 +89,50 @@
                 
                 <!-- Column 1: Client & Attack Controller -->
                 <div class="workspace-col left-col">
-                    
+
+                    <!-- System Power Controls Card -->
+                    <div class="panel-card power-card">
+                        <div class="panel-head">
+                            <h3><span class="icon">🔌</span> System Power Controls</h3>
+                            <span class="pill pill-blue">Live Process</span>
+                        </div>
+                        <div class="panel-body">
+                            <p class="panel-desc">Start or stop the UDP server and continuous client traffic stream. Buttons reflect real process state.</p>
+
+                            <div class="power-controls">
+                                <!-- UDP Server Toggle -->
+                                <div class="power-row">
+                                    <div class="power-label">
+                                        <span class="power-icon">🖥️</span>
+                                        <div>
+                                            <div class="power-name">UDP Server</div>
+                                            <div class="power-desc">Binds 127.0.0.1:5000, processes authenticated datagrams</div>
+                                        </div>
+                                    </div>
+                                    <div class="power-right">
+                                        <span class="status-badge" id="server-badge">● RUNNING</span>
+                                        <button class="power-btn btn-stop" id="btn-server-toggle" onclick="toggleServer()">Stop Server</button>
+                                    </div>
+                                </div>
+
+                                <!-- Client Streaming Toggle -->
+                                <div class="power-row">
+                                    <div class="power-label">
+                                        <span class="power-icon">📡</span>
+                                        <div>
+                                            <div class="power-name">Client Stream</div>
+                                            <div class="power-desc">Continuous ~20 Hz UDP traffic (90% LOW / 10% HIGH packets)</div>
+                                        </div>
+                                    </div>
+                                    <div class="power-right">
+                                        <span class="status-badge badge-off" id="client-badge">● IDLE</span>
+                                        <button class="power-btn btn-start" id="btn-client-toggle" onclick="toggleClientStream()">Start Stream</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Traffic Injector Card -->
                     <div class="panel-card">
                         <div class="panel-head">

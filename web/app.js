@@ -70,6 +70,42 @@ async function pollStatus() {
         const pct = total > 0 ? ((accepts / total) * 100).toFixed(1) : "0.0";
         document.getElementById("stat-accepted-pct").innerText = `${pct}% Pass Rate`;
 
+        // --- Server & Client toggle badge sync ---
+        const serverRunning   = data.server_running !== false; // true when key absent
+        const clientStreaming  = !!data.client_streaming;
+
+        const serverBadge = document.getElementById("server-badge");
+        const serverBtn   = document.getElementById("btn-server-toggle");
+        if (serverBadge && serverBtn) {
+            if (serverRunning) {
+                serverBadge.textContent = "● RUNNING";
+                serverBadge.className   = "status-badge";
+                serverBtn.textContent   = "Stop Server";
+                serverBtn.className     = "power-btn btn-stop";
+            } else {
+                serverBadge.textContent = "● STOPPED";
+                serverBadge.className   = "status-badge badge-off";
+                serverBtn.textContent   = "Start Server";
+                serverBtn.className     = "power-btn btn-start";
+            }
+        }
+
+        const clientBadge = document.getElementById("client-badge");
+        const clientBtn   = document.getElementById("btn-client-toggle");
+        if (clientBadge && clientBtn) {
+            if (clientStreaming) {
+                clientBadge.textContent = "● STREAMING";
+                clientBadge.className   = "status-badge";
+                clientBtn.textContent   = "Stop Stream";
+                clientBtn.className     = "power-btn btn-stop";
+            } else {
+                clientBadge.textContent = "● IDLE";
+                clientBadge.className   = "status-badge badge-off";
+                clientBtn.textContent   = "Start Stream";
+                clientBtn.className     = "power-btn btn-start";
+            }
+        }
+
         // Update 64-Bit Register View
         const windows = data.windows || {};
         const addrs = Object.keys(windows);
@@ -224,4 +260,33 @@ function updateWireInspector(wireHex, pktType, seqNo) {
     document.getElementById("inp-seq-desc").innerText = `Seq: ${seqNo}`;
 
     document.getElementById("inp-mac-hex").innerText = macHex;
+}
+
+// --- System Power Controls ---
+
+async function toggleServer() {
+    try {
+        await fetch("/api/server_toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "toggle" })
+        });
+        // pollStatus will update badge on next 500ms tick
+        await pollStatus();
+    } catch (err) {
+        console.error("Server toggle error:", err);
+    }
+}
+
+async function toggleClientStream() {
+    try {
+        await fetch("/api/client_toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "toggle" })
+        });
+        await pollStatus();
+    } catch (err) {
+        console.error("Client stream toggle error:", err);
+    }
 }
