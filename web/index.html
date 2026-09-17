@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR-SPECK: Adaptive Round SPECK Presentation Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Bar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="shield-icon">🛡️</div>
+                <div>
+                    <h1>AR-SPECK <span>v1.0</span></h1>
+                    <p class="subtitle">Adaptive Round-Based SPECK Cipher & Replay-Protected UDP Protocol</p>
+                </div>
+            </div>
+            <div class="server-badge">
+                <span class="pulse-dot"></span>
+                <span id="server-status-text">UDP Server Live: 127.0.0.1:5000</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('simulation')">🎮 Live UDP Simulation & Defense</button>
+            <button class="tab-btn" onclick="switchTab('explainer')">🔬 Cryptographic Explainer & Viva Benchmarks</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- TAB 1: LIVE UDP SIMULATION -->
+            <div id="tab-simulation" class="tab-content active">
+                
+                <!-- Stat KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <span class="kpi-title">Total Packets Processed</span>
+                        <span class="kpi-value" id="kpi-total">0</span>
+                    </div>
+                    <div class="kpi-card success">
+                        <span class="kpi-title">Accepted Packets</span>
+                        <span class="kpi-value" id="kpi-accepted">0</span>
+                    </div>
+                    <div class="kpi-card danger">
+                        <span class="kpi-title">Bad MAC Drops (Tamper/Spoof)</span>
+                        <span class="kpi-value" id="kpi-bad-mac">0</span>
+                    </div>
+                    <div class="kpi-card warning">
+                        <span class="kpi-title">Replay & Stale Drops</span>
+                        <span class="kpi-value" id="kpi-replay">0</span>
+                    </div>
+                </div>
+
+                <!-- Simulation Interactive Grid -->
+                <div class="sim-grid">
+                    
+                    <!-- Left Column: Controls -->
+                    <div class="control-panel">
+                        
+                        <!-- Client Control Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>⚡ Legitimate Client Traffic Generator</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-desc">Sends authenticated UDP packets to real <code>server.py</code> over socket <code>127.0.0.1:5000</code>.</p>
+                                <div class="btn-group">
+                                    <button class="btn btn-low" onclick="sendPacket('position')">
+                                        <span>Position Packet</span>
+                                        <small>TIER_LOW (12 Rounds)</small>
+                                    </button>
+                                    <button class="btn btn-high" onclick="sendPacket('score')">
+                                        <span>Score Packet</span>
+                                        <small>TIER_HIGH (27 Rounds)</small>
+                                    </button>
+                                    <button class="btn btn-burst" onclick="sendBurst()">
+                                        <span>🔥 20-Packet Burst</span>
+                                        <small>9:1 Low:High Traffic Ratio</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Adversary Attack Control Card -->
+                        <div class="card attack-card">
+                            <div class="card-header">
+                                <h3>☠️ Adversary Attack Injector</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-desc">Fires real network attacks to prove protocol defense invariants.</p>
+                                <div class="btn-group">
+                                    <button class="btn btn-attack" onclick="triggerAttack('tamper')">
+                                        <span>Ciphertext Tampering</span>
+                                        <small>Flips bit in transit (Expects BAD_MAC)</small>
+                                    </button>
+                                    <button class="btn btn-attack" onclick="triggerAttack('replay')">
+                                        <span>Packet Replay Attack</span>
+                                        <small>Resends captured packet (Expects REPLAY drop)</small>
+                                    </button>
+                                    <button class="btn btn-attack" onclick="triggerAttack('spoof')">
+                                        <span>Key Spoofing Attack</span>
+                                        <small>Packet encrypted with invalid key (Expects BAD_MAC)</small>
+                                    </button>
+                                </div>
+                                <button class="btn btn-secondary btn-reset" onclick="resetServer()">🔄 Reset Server State & Logs</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Live Logs & Sliding Window -->
+                    <div class="display-panel">
+                        
+                        <!-- 64-Bit Sliding Window Visualizer -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🪟 64-Bit Sliding Window Bitmap State</h3>
+                                <span class="window-range" id="window-range-text">Range: [Uninitialized]</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-desc">Green = Received / Accepted bit. Dark = Unseen sequence slot. Highest seq = Bit 0.</p>
+                                <div class="bitmap-grid" id="bitmap-grid">
+                                    <!-- 64 bit cells rendered by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Event Terminal Log -->
+                        <div class="card terminal-card">
+                            <div class="card-header">
+                                <h3>📟 Live Server Security Log Stream</h3>
+                                <button class="btn-sm" onclick="clearConsole()">Clear View</button>
+                            </div>
+                            <div class="terminal-body" id="terminal-log">
+                                <div class="log-line info">[SYSTEM] Web bridge connected to ARSpeckServer on UDP 127.0.0.1:5000...</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TAB 2: CRYPTOGRAPHIC EXPLAINER -->
+            <div id="tab-explainer" class="tab-content">
+                
+                <div class="explainer-grid">
+                    
+                    <!-- ARX Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>1. What is an ARX Cipher?</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>SPECK is a lightweight <strong>ARX</strong> cipher built using only three basic CPU instructions:</p>
+                            <div class="arx-steps">
+                                <div class="arx-box">
+                                    <span class="arx-icon">➕</span>
+                                    <h4>Modular Addition</h4>
+                                    <p>Provides <strong>non-linear mixing</strong> and carry bit propagation mod $2^{32}$.</p>
+                                </div>
+                                <div class="arx-box">
+                                    <span class="arx-icon">🔄</span>
+                                    <h4>Circular Rotation</h4>
+                                    <p>Provides <strong>linear diffusion</strong> ($\text{ROR}_8$ and $\text{ROL}_3$) across 32-bit words.</p>
+                                </div>
+                                <div class="arx-box">
+                                    <span class="arx-icon">⊕</span>
+                                    <h4>Bitwise XOR</h4>
+                                    <p>Injects round subkeys $k_i$ and combines state variables linearly.</p>
+                                </div>
+                            </div>
+                            <div class="viva-note">
+                                <strong>Viva Talking Point:</strong> Unlike AES, SPECK uses <em>zero S-Boxes or lookup tables</em>, protecting against cache-timing side-channel attacks and running efficiently on constrained UDP packet processors.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 21-Byte Wire Format Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>2. Authenticated 21-Byte Wire Protocol Layout</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="wire-diagram">
+                                <div class="wire-chunk chunk-tier">
+                                    <span class="chunk-len">1 Byte</span>
+                                    <span class="chunk-name">Tier ID</span>
+                                    <span class="chunk-desc">0x01 = LOW, 0x02 = HIGH</span>
+                                </div>
+                                <div class="wire-chunk chunk-ct">
+                                    <span class="chunk-len">8 Bytes</span>
+                                    <span class="chunk-name">SPECK Ciphertext</span>
+                                    <span class="chunk-desc">Encrypted Payload (T=12/27)</span>
+                                </div>
+                                <div class="wire-chunk chunk-seq">
+                                    <span class="chunk-len">4 Bytes</span>
+                                    <span class="chunk-name">Sequence Number</span>
+                                    <span class="chunk-desc">Big-Endian (&gt;I)</span>
+                                </div>
+                                <div class="wire-chunk chunk-mac">
+                                    <span class="chunk-len">8 Bytes</span>
+                                    <span class="chunk-name">Truncated MAC</span>
+                                    <span class="chunk-desc">HMAC-SHA256 (64 bits)</span>
+                                </div>
+                            </div>
+                            <div class="viva-note">
+                                <strong>Verify-Then-Decrypt Invariant:</strong> The receiver verifies the MAC <em>before</em> attempting SPECK decryption. If MAC is invalid, decryption is skipped completely.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Results Table Card -->
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3>3. Master Security vs Speed Trade-Off Evaluation (Phase 5 & Phase 6)</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sensitivity Tier</th>
+                                        <th>Round Count ($T$)</th>
+                                        <th>Throughput (blocks/sec)</th>
+                                        <th>Cipher Latency ($\mu s$)</th>
+                                        <th>MAC Overhead ($\mu s$)</th>
+                                        <th>Total Latency ($\mu s$)</th>
+                                        <th>Avg Avalanche (%)</th>
+                                        <th>Randomness Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge badge-high">TIER_HIGH (Score)</span></td>
+                                        <td>27</td>
+                                        <td>54,626</td>
+                                        <td>18.306 $\mu s$</td>
+                                        <td>3.529 $\mu s$</td>
+                                        <td>21.836 $\mu s$</td>
+                                        <td>50.24%</td>
+                                        <td><span class="badge badge-pass">PASS</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge badge-med">MEDIUM</span></td>
+                                        <td>20</td>
+                                        <td>87,821</td>
+                                        <td>11.387 $\mu s$</td>
+                                        <td>3.529 $\mu s$</td>
+                                        <td>14.916 $\mu s$</td>
+                                        <td>50.12%</td>
+                                        <td><span class="badge badge-pass">PASS</span></td>
+                                    </tr>
+                                    <tr class="highlight-row">
+                                        <td><span class="badge badge-low">TIER_LOW (Position)</span></td>
+                                        <td>12</td>
+                                        <td>141,368</td>
+                                        <td>7.074 $\mu s$</td>
+                                        <td>3.529 $\mu s$</td>
+                                        <td>10.603 $\mu s$</td>
+                                        <td>50.05%</td>
+                                        <td><span class="badge badge-pass">PASS</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge badge-aes">AES-128 Baseline</span></td>
+                                        <td>10 (AES)</td>
+                                        <td>646,810</td>
+                                        <td>1.546 $\mu s$</td>
+                                        <td>N/A</td>
+                                        <td>N/A</td>
+                                        <td>N/A</td>
+                                        <td><span class="badge badge-pass">PASS</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="viva-note">
+                                <strong>Key Trade-Off Finding:</strong> Reducing rounds to $T=12$ achieves a <strong>$2.58\times$ speedup</strong> ($61.3\%$ latency savings) for routine movement traffic while preserving near-ideal avalanche diffusion ($50.05\%$) and passing NIST randomness tests ($p > 0.01$).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Benchmark Charts Card -->
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3>4. Visual Benchmark Figures</h3>
+                        </div>
+                        <div class="card-body charts-flex">
+                            <div class="chart-box">
+                                <h4>Encryption Throughput Comparison</h4>
+                                <img src="/throughput_vs_rounds.png" alt="Throughput vs Rounds Chart" onerror="this.src='https://via.placeholder.com/500x300?text=Run+benchmarks/results.py+to+generate+chart'">
+                            </div>
+                            <div class="chart-box">
+                                <h4>Avalanche Effect Diffusion</h4>
+                                <img src="/avalanche_vs_rounds.png" alt="Avalanche vs Rounds Chart" onerror="this.src='https://via.placeholder.com/500x300?text=Run+benchmarks/results.py+to+generate+chart'">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
