@@ -1,13 +1,13 @@
 # AR-SPECK: Adaptive Round-Based SPECK Cipher & UDP Protocol Architecture
 
-AR-SPECK is an adaptive lightweight block cipher project designed for real-time multiplayer game UDP traffic. This repository contains:
+AR-SPECK is an adaptive lightweight block cipher project designed for real-time multiplayer game UDP traffic. This repository contains the complete 6-phase implementation from scratch in Python 3 using standard libraries (`socket`, `hmac`, `hashlib`, `struct`, `math`, `threading`) with zero external crypto dependencies for the cipher itself.
+
 - **Phase 1**: SPECK64/128 Cipher Core (`speck64.py`)
 - **Phase 2**: Sensitivity Tiering & Authenticated Protocol Layer (`tiering.py`, `protocol.py`)
 - **Phase 3**: UDP Client/Server Pair & Sliding-Window Replay Protection (`replay_window.py`, `server.py`, `client.py`)
 - **Phase 4**: Adversary Attack Suite & Defense Verification (`attacks/packet_editor.py`, `attacks/replay.py`, `attacks/spoofed_sender.py`, `attacks/run_all_attacks.py`)
 - **Phase 5**: Crypto-Quality Evaluation Suite (`crypto_tests/avalanche.py`, `crypto_tests/randomness.py`, `crypto_tests/run_all_crypto_tests.py`, `crypto_tests/results.csv`)
-
-Implementation uses Python 3 standard library only (`socket`, `hmac`, `hashlib`, `struct`, `math`, `threading`).
+- **Phase 6**: Performance Benchmarks & Final Trade-Off Evaluation (`benchmarks/throughput.py`, `benchmarks/mac_overhead.py`, `benchmarks/results.py`, `benchmarks/final_results.csv`, `benchmarks/*.png`)
 
 ---
 
@@ -108,7 +108,7 @@ UDP is connectionless and unacknowledged; packets can arrive out-of-order or be 
 
 ---
 
-## 7. Phase 5: Crypto-Quality & Avalanche Benchmarks
+## 7. Crypto-Quality & Avalanche Benchmarks (Phase 5)
 
 Phase 5 evaluates the mathematical diffusion and statistical randomness of SPECK ciphertext output across round counts $T \in \{27, 20, 12\}$.
 
@@ -121,21 +121,54 @@ Phase 5 evaluates the mathematical diffusion and statistical randomness of SPECK
 - **Monobit Frequency Test (NIST SP 800-22 §2.1)**: Tests proportion of 0s and 1s in a 64,000-bit stream ($N=1000$ ciphertext blocks). Passed if $p \ge 0.01$.
 - **Runs Test (NIST SP 800-22 §2.2)**: Tests total count of consecutive identical bit runs. Passed if $p \ge 0.01$.
 
-### Benchmark Summary Table (`crypto_tests/results.csv`)
-
 | Round Count ($T$) | Plaintext Avalanche (%) | Key Avalanche (%) | Frequency Test $p$-value | Runs Test $p$-value | Randomness Status |
 |---|---|---|---|---|---|
 | **27 (HIGH Tier)** | 50.23% | 49.78% | 0.4817 | 0.3706 | **PASS** ($p > 0.01$) |
 | **20 (MEDIUM Tier)** | 49.86% | 50.30% | 0.5692 | 0.5314 | **PASS** ($p > 0.01$) |
 | **12 (LOW Tier)** | 49.90% | 50.36% | 0.2788 | 0.8335 | **PASS** ($p > 0.01$) |
 
-> **Viva Insight**: Even at reduced round count $T=12$, SPECK achieves near-ideal avalanche diffusion ($\approx 50\%$) and passes NIST frequency and run distribution tests ($p > 0.01$). This confirms that $T=12$ provides adequate statistical diffusion for high-frequency low-sensitivity UDP movement packets while reducing CPU load.
+---
+
+## 8. Performance Benchmarks & Final Trade-Off Evaluation (Phase 6)
+
+Phase 6 measures execution speed, latency reduction, isolated MAC authentication overhead, and compares SPECK64 against an AES-128 baseline.
+
+### Master Security vs. Speed Trade-Off Table (`benchmarks/final_results.csv`)
+
+| Round Count ($T$) | Throughput (blocks/sec) | Cipher Latency ($\mu s$/block) | MAC Overhead ($\mu s$) | Total Latency ($\mu s$) | Avg Avalanche (%) | Randomness Status |
+|---|---|---|---|---|---|---|
+| **27 (HIGH Tier)** | 54,626 | 18.306 $\mu s$ | 3.529 $\mu s$ | 21.836 $\mu s$ | 50.24% | **PASS** |
+| **20 (MEDIUM Tier)** | 87,821 | 11.387 $\mu s$ | 3.529 $\mu s$ | 14.916 $\mu s$ | 50.12% | **PASS** |
+| **12 (LOW Tier)** | 141,368 | 7.074 $\mu s$ | 3.529 $\mu s$ | 10.603 $\mu s$ | 50.05% | **PASS** |
+| **AES-128 Baseline** | 646,810 | 1.546 $\mu s$ | N/A | N/A | N/A | **PASS** |
+
+*Note: AES-128 baseline evaluated via `pycryptodome`. Encrypting an 8-byte game payload with AES requires 8 bytes of padding (16 bytes on wire), doubling UDP payload overhead compared to SPECK64's native 8-byte block size.*
+
+### Visual Benchmark Figures
+- **Throughput vs. Round Count**: `benchmarks/throughput_vs_rounds.png`
+- **Avalanche Effect vs. Round Count**: `benchmarks/avalanche_vs_rounds.png`
 
 ---
 
-## 8. Running the Verification Suite
+## 9. Key Viva Talking Points & Report Analysis
 
-Execute `cli_test.py` to run all Phase 1–5 verification tests:
+1. **Quantified Performance Gain**:
+   - Reducing SPECK round count from $T=27$ (HIGH tier: score/inventory) to $T=12$ (LOW tier: routine movement/position) reduces cipher execution time from **18.306 $\mu s$** to **7.074 $\mu s$** per block — delivering a **$2.58\times$ speedup** ($61.3\%$ reduction in encryption latency).
+   - This latency reduction conserves server CPU cycles during high-frequency UDP game ticks (60–128 Hz streams).
+
+2. **Security Integrity Maintained**:
+   - At $T=12$ rounds, SPECK maintains near-ideal avalanche diffusion (**50.05%** of bits flip when a single plaintext or key bit changes) and passes NIST SP 800-22 Monobit Frequency ($p > 0.01$) and Runs ($p > 0.01$) randomness tests.
+   - Message authentication (`compute_mac`: $3.529 \mu s$) and 64-bit sliding-window replay protection execute at full strength regardless of tier, ensuring 100% rejection of tampering, forgery, and replay attacks (as proven by Phase 4 attack scripts).
+
+3. **SPECK64 vs. AES-128 Trade-Off**:
+   - Hardware-accelerated C-extensions (like AES-ECB) process blocks rapidly in software, BUT AES's 16-byte minimum block size forces 8 bytes of padding for 8-byte game vectors, doubling payload wire size.
+   - SPECK64/128 operates directly on native 64-bit (8-byte) blocks, conserving UDP network bandwidth while eliminating table-lookup cache-timing vulnerabilities due to its pure ARX architecture.
+
+---
+
+## 10. Running the Master Verification Suite
+
+Execute `cli_test.py` to run all Phase 1–6 verification tests end-to-end:
 
 ```powershell
 python cli_test.py
