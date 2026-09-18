@@ -19,9 +19,6 @@ function showSection(secId) {
     } else if (secId === 'benchmarks') {
         document.getElementById("sec-benchmarks").classList.add("active");
         document.getElementById("btn-nav-bench").classList.add("active");
-    } else if (secId === 'viva') {
-        document.getElementById("sec-viva").classList.add("active");
-        document.getElementById("btn-nav-viva").classList.add("active");
     }
 }
 

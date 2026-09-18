@@ -35,9 +35,7 @@
                     <button class="nav-btn" id="btn-nav-bench" onclick="showSection('benchmarks')">
                         <span class="btn-icon">📊</span> Security & Speed Benchmarks
                     </button>
-                    <button class="nav-btn" id="btn-nav-viva" onclick="showSection('viva')">
-                        <span class="btn-icon">🎓</span> Faculty Viva Cheat Sheet
-                    </button>
+
                 </div>
             </div>
         </header>
@@ -382,82 +380,6 @@
                         <div class="panel-body img-container">
                             <img src="/avalanche_vs_rounds.png" alt="Avalanche Diffusion Chart" onerror="this.parentElement.innerHTML='<p class=no-img>Run benchmarks/results.py to generate PNG chart</p>'">
                         </div>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-
-        <!-- SECTION 3: FACULTY VIVA CHEAT SHEET -->
-        <main id="sec-viva" class="sec-view">
-            <div class="viva-container">
-                
-                <div class="panel-card">
-                    <div class="panel-head">
-                        <h3><span class="icon">🎓</span> 5-Minute Viva Presentation Script & Talking Points</h3>
-                        <span class="pill pill-blue">Course Defense Guide</span>
-                    </div>
-                    <div class="panel-body">
-                        
-                        <div class="viva-step">
-                            <div class="step-num">Step 1</div>
-                            <div class="step-content">
-                                <h4>Introduction & Problem Statement (1 Minute)</h4>
-                                <p><strong>What to say:</strong> "Real-time multiplayer games stream high-frequency player movement packets over UDP (60 to 128 Hz). Conventional block ciphers like AES-128 add encryption overhead and force 16-byte block padding on small 8-byte game vectors, wasting network bandwidth. In AR-SPECK, we designed an <em>Adaptive Round SPECK cipher</em> with sensitivity-tiered encryption wrapped in an authenticated, replay-protected UDP protocol."</p>
-                            </div>
-                        </div>
-
-                        <div class="viva-step">
-                            <div class="step-content">
-                                <div class="step-num">Step 2</div>
-                                <h4>ARX Cipher Core & Zero S-Box Architecture (1 Minute)</h4>
-                                <p><strong>What to say:</strong> "SPECK is an ARX (Add-Rotate-XOR) cipher. It uses only three CPU operations: Modular Addition mod 2<sup>32</sup> for non-linear mixing, bitwise rotations (Rotate Right 8, Rotate Left 3) for linear bit diffusion, and XOR for key injection. Because SPECK uses zero lookup tables (S-Boxes), it eliminates cache-timing side-channel vulnerabilities."</p>
-                            </div>
-                        </div>
-
-                        <div class="viva-step">
-                            <div class="step-num">Step 3</div>
-                            <div class="step-content">
-                                <h4>Sensitivity Tiering & Verify-Then-Decrypt Ordering (1 Minute)</h4>
-                                <p><strong>What to say:</strong> "Packets are categorized into sensitivity tiers: TIER_LOW (position updates) uses reduced 12 SPECK rounds to save CPU cycles, while TIER_HIGH (score/items) uses standard 27 rounds for full security. Every packet carries a 21-byte wire format with an HMAC-SHA256 MAC. Crucially, the server enforces <em>Verify-Then-Decrypt</em>: if the MAC is invalid, decryption is skipped completely, preventing chosen-ciphertext attacks."</p>
-                            </div>
-                        </div>
-
-                        <div class="viva-step">
-                            <div class="step-num">Step 4</div>
-                            <div class="step-content">
-                                <h4>64-Bit Sliding Window Replay Defense (1 Minute)</h4>
-                                <p><strong>What to say:</strong> "UDP traffic can arrive out of order. A simple 'last seen counter' would drop valid reordered packets. Our server maintains a per-client 64-bit sliding window bitmap. Out-of-order packets inside the 64-sequence window are accepted, while genuine duplicate sequence numbers are detected instantly as replays and dropped."</p>
-                            </div>
-                        </div>
-
-                        <div class="viva-step">
-                            <div class="step-num">Step 5</div>
-                            <div class="step-content">
-                                <h4>Live Web Demo & Measured Results (1 Minute)</h4>
-                                <p><strong>What to show:</strong> Click the live simulation buttons on the <em>Live Socket Control</em> tab to demonstrate: (1) Position & Score packet encryption, (2) Ciphertext bit-flip detection (BAD_MAC drop), (3) Replay attack rejection, and (4) The 2.58&times; latency reduction table in Phase 6."</p>
-                            </div>
-                        </div>
-
-                        <div class="viva-qa">
-                            <h3>Expected Faculty Viva Questions & Exact Answers</h3>
-                            
-                            <div class="qa-item">
-                                <p class="q">Q1: Why does sensitivity tiering affect SPECK rounds but never the MAC?</p>
-                                <p class="a"><strong>Answer:</strong> The MAC provides integrity and authenticity for all packets. Reducing MAC strength would allow attackers to forge packets. Therefore, HMAC-SHA256 always executes at full strength, while round-count reduction is applied strictly to the cipher step for routine low-sensitivity payload data.</p>
-                            </div>
-
-                            <div class="qa-item">
-                                <p class="q">Q2: Does reducing SPECK rounds to T=12 compromise diffusion?</p>
-                                <p class="a"><strong>Answer:</strong> Our Phase 5 crypto measurements prove that at T=12 rounds, SPECK achieves near-ideal 50.05% avalanche diffusion (flipping 1 plaintext or key bit flips ~32 ciphertext bits) and passes NIST SP 800-22 Monobit Frequency and Runs randomness tests (p &gt; 0.01).</p>
-                            </div>
-
-                            <div class="qa-item">
-                                <p class="q">Q3: Why use SPECK64 instead of AES-128 if AES hardware instructions exist?</p>
-                                <p class="a"><strong>Answer:</strong> AES requires a 16-byte block size. For an 8-byte game vector, AES forces 8 bytes of padding, doubling wire overhead. SPECK64 operates natively on 8-byte blocks without padding overhead, making it lighter over UDP network paths.</p>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
 
