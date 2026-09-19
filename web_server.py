@@ -220,18 +220,19 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 attack_seq = speck_client.seq_no
                 speck_client.seq_no += 10
                 if attack_type == "tamper":
-                    seq, name = run_packet_editor_attack(server_port=UDP_PORT, key=KEY, seq_no=attack_seq)
+                    seq, name, wire_bytes = run_packet_editor_attack(server_port=UDP_PORT, key=KEY, seq_no=attack_seq)
                 elif attack_type == "replay":
-                    seq, name = run_replay_attack(server_port=UDP_PORT, key=KEY, seq_no=attack_seq)
+                    seq, name, wire_bytes = run_replay_attack(server_port=UDP_PORT, key=KEY, seq_no=attack_seq)
                 elif attack_type == "spoof":
-                    seq, name = run_spoofed_sender_attack(server_port=UDP_PORT, seq_no=attack_seq)
+                    seq, name, wire_bytes = run_spoofed_sender_attack(server_port=UDP_PORT, seq_no=attack_seq)
                 else:
                     self.send_json({"error": "Unknown attack type"}, status=400)
                     return
                 self.send_json({
                     "status": "success",
                     "message": f"Executed attack '{name}' (Seq {seq}) over UDP",
-                    "seq_no": seq
+                    "seq_no": seq,
+                    "wire_hex": wire_bytes.hex()
                 })
 
             elif path == "/api/burst":
@@ -285,9 +286,10 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
         # Idea 2: Threat Automaton telemetry
         threat = speck_server.threat_stats
 
-        # Idea 1: Entropy engine telemetry
+        # Idea 1 & 2: Entropy engine telemetry + Threat Automaton escalation override
         entropy_last = round(getattr(speck_client, "last_entropy", 0.0), 3)
-        entropy_rounds_last = getattr(speck_client, "last_entropy_rounds", 8)
+        base_rounds = getattr(speck_client, "last_entropy_rounds", 8)
+        entropy_rounds_last = speck_server.get_escalated_rounds(base_rounds)
 
         # Idea 3: Markov predictor telemetry
         markov_next = getattr(speck_client, "markov_next_prediction", None)

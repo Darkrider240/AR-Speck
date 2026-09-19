@@ -51,7 +51,7 @@ def run_packet_editor_attack(server_host: str = "127.0.0.1", server_port: int = 
     sock.sendto(bytes(mangled_wire), (server_host, server_port))
     sock.close()
     
-    return seq_no, "Packet Editor (Ciphertext Bit Flip)"
+    return seq_no, "Packet Editor (Ciphertext Bit Flip)", bytes(mangled_wire)
 
 
 if __name__ == "__main__":

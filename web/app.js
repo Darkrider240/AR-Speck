@@ -179,12 +179,20 @@ async function pollStatus() {
             renderHistogram(data.byte_distribution);
         }
 
-        // Idea 1: Entropy Engine Telemetry
+        // Idea 1 & 2: Entropy Engine Telemetry + Threat Escalation indicator
         if (data.entropy_last !== undefined) {
             safeText("entropy-val", `${data.entropy_last.toFixed(3)} bits`);
         }
         if (data.entropy_rounds_last !== undefined) {
-            safeText("entropy-rounds-val", `T = ${data.entropy_rounds_last}`);
+            let roundsStr = `T = ${data.entropy_rounds_last}`;
+            if (data.threat) {
+                if (data.threat.threat_level === "CRITICAL") {
+                    roundsStr += " (CRITICAL Forced T=27)";
+                } else if (data.threat.threat_level === "ELEVATED") {
+                    roundsStr += " (ELEVATED +4 Floor)";
+                }
+            }
+            safeText("entropy-rounds-val", roundsStr);
         }
 
         // Idea 2: Threat Automaton Telemetry
@@ -286,11 +294,18 @@ async function sendPacket(pktType) {
 
 async function triggerAttack(attackType) {
     try {
-        await fetch("/api/attack", {
+        const res = await fetch("/api/attack", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ attack_type: attackType })
         });
+        const data = await res.json();
+        if (data.wire_hex) {
+            updateWireInspector(data.wire_hex, `ATTACK: ${attackType}`, data.seq_no);
+        }
+        // Immediately poll status and logs so attack results show instantly
+        await pollStatus();
+        await pollLogs();
     } catch (err) {
         console.error("Trigger attack error:", err);
     }

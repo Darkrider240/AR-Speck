@@ -46,7 +46,7 @@ def run_spoofed_sender_attack(server_host: str = "127.0.0.1", server_port: int =
     sock.sendto(spoofed_wire, (server_host, server_port))
     sock.close()
     
-    return seq_no, "Spoofed Sender (Invalid Key)"
+    return seq_no, "Spoofed Sender (Invalid Key)", spoofed_wire
 
 
 if __name__ == "__main__":

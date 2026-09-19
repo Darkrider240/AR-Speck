@@ -54,7 +54,7 @@ def run_replay_attack(server_host: str = "127.0.0.1", server_port: int = 5000,
     sock.sendto(valid_wire, (server_host, server_port))
     sock.close()
     
-    return seq_no, "Packet Replay"
+    return seq_no, "Packet Replay", valid_wire
 
 
 if __name__ == "__main__":
