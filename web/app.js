@@ -179,6 +179,48 @@ async function pollStatus() {
             renderHistogram(data.byte_distribution);
         }
 
+        // Idea 1: Entropy Engine Telemetry
+        if (data.entropy_last !== undefined) {
+            safeText("entropy-val", `${data.entropy_last.toFixed(3)} bits`);
+        }
+        if (data.entropy_rounds_last !== undefined) {
+            safeText("entropy-rounds-val", `T = ${data.entropy_rounds_last}`);
+        }
+
+        // Idea 2: Threat Automaton Telemetry
+        if (data.threat) {
+            const threatBadge = document.getElementById("threat-level-badge");
+            if (threatBadge) {
+                const lvl = data.threat.threat_level || "NOMINAL";
+                threatBadge.textContent = lvl;
+                if (lvl === "CRITICAL") {
+                    threatBadge.className = "status-badge badge-critical";
+                } else if (lvl === "ELEVATED") {
+                    threatBadge.className = "status-badge badge-elevated";
+                } else {
+                    threatBadge.className = "status-badge";
+                }
+            }
+
+            safeText("threat-window-replay", (data.threat.window_replay_count || 0).toString());
+            safeText("threat-window-badmac", (data.threat.window_bad_mac_count || 0).toString());
+
+            const expStr = data.threat.escalation_active
+                ? `${data.threat.escalation_expires_in}s remaining`
+                : "Inactive";
+            safeText("threat-escalation-expires", expStr);
+        }
+
+        // Idea 3: Markov Predictor Telemetry
+        if (data.markov_next) {
+            safeText("markov-pred-type", data.markov_next[0] || "--");
+            const probPct = (data.markov_next[1] * 100).toFixed(0);
+            safeText("markov-pred-prob", `${probPct}%`);
+        }
+        if (data.markov_prefetch_rounds !== undefined) {
+            safeText("markov-prefetch-rounds", `T = ${data.markov_prefetch_rounds}`);
+        }
+
     } catch (err) {
         console.error("Status polling error:", err);
     }

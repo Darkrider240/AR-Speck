@@ -273,10 +273,67 @@
                                         <span>Ciphertext Byte Distribution</span>
                                         <span class="mono-text chart-stat">0..255 Uniformity</span>
                                     </div>
-                                    <canvas id="canvas-histogram" width="400" height="110"></canvas>
-                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Adaptive Engine Live Panels (Ideas 1, 2, 3) -->
+                    <div class="adaptive-row">
+
+                        <!-- Idea 1: Entropy-Driven Round Selector -->
+                        <div class="info-card">
+                            <div class="card-label">Entropy-Driven Round Selector</div>
+                            <div class="card-row">
+                                <span class="card-key">Block Entropy (H)</span>
+                                <span class="mono-text" id="entropy-val">0.000 bits</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Chosen Round Count</span>
+                                <span class="mono-text" id="entropy-rounds-val">T = 8</span>
+                            </div>
+                            <div class="card-sub">H = Shannon entropy of 8-byte payload. T = f(H) overrides static tier lookup per block.</div>
+                        </div>
+
+                        <!-- Idea 2: Threat-Signal Security Automaton -->
+                        <div class="info-card">
+                            <div class="card-label">Threat-Signal Security Automaton</div>
+                            <div class="card-row">
+                                <span class="card-key">Threat Level</span>
+                                <span id="threat-level-badge" class="status-badge">NOMINAL</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Replays (10s window)</span>
+                                <span class="mono-text" id="threat-window-replay">0</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Bad MACs (10s window)</span>
+                                <span class="mono-text" id="threat-window-badmac">0</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Escalation</span>
+                                <span class="mono-text" id="threat-escalation-expires">Inactive</span>
+                            </div>
+                            <div class="card-sub">&ge;3 bad MACs &rarr; CRITICAL (T=27 forced). &ge;5 replays &rarr; ELEVATED (+4 rounds, 30s).</div>
+                        </div>
+
+                        <!-- Idea 3: Markov Next-Packet Predictor -->
+                        <div class="info-card">
+                            <div class="card-label">Markov Next-Packet Predictor</div>
+                            <div class="card-row">
+                                <span class="card-key">Predicted Next Type</span>
+                                <span class="mono-text" id="markov-pred-type">--</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Transition Probability</span>
+                                <span class="mono-text" id="markov-pred-prob">--</span>
+                            </div>
+                            <div class="card-row">
+                                <span class="card-key">Pre-fetched Round T</span>
+                                <span class="mono-text" id="markov-prefetch-rounds">T = --</span>
+                            </div>
+                            <div class="card-sub">6&times;6 empirical Markov matrix. Key schedule for T<sub>next</sub> pre-computed while current packet encrypts.</div>
+                        </div>
+
                     </div>
 
                     <!-- 21-Byte Wire Packet Inspector -->

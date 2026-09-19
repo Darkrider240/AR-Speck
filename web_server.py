@@ -281,6 +281,18 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
         bad_macs = sum(1 for e in logs if e.get("reason") == "bad_mac")
         replays = sum(1 for e in logs if e.get("reason") == "replay")
         too_olds = sum(1 for e in logs if e.get("reason") == "too_old")
+
+        # Idea 2: Threat Automaton telemetry
+        threat = speck_server.threat_stats
+
+        # Idea 1: Entropy engine telemetry
+        entropy_last = round(getattr(speck_client, "last_entropy", 0.0), 3)
+        entropy_rounds_last = getattr(speck_client, "last_entropy_rounds", 8)
+
+        # Idea 3: Markov predictor telemetry
+        markov_next = getattr(speck_client, "markov_next_prediction", None)
+        markov_prefetch_rounds = getattr(speck_client, "markov_prefetch_rounds", None)
+
         return {
             "server_running": speck_server.is_running,
             "client_streaming": client_streaming,
@@ -292,7 +304,12 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
             "too_old_drops": too_olds,
             "windows": windows,
             "byte_distribution": list(byte_distribution),
-            "rolling_latencies": list(rolling_latencies)
+            "rolling_latencies": list(rolling_latencies),
+            "threat": threat,
+            "entropy_last": entropy_last,
+            "entropy_rounds_last": entropy_rounds_last,
+            "markov_next": list(markov_next) if markov_next else None,
+            "markov_prefetch_rounds": markov_prefetch_rounds,
         }
 
     def log_message(self, format, *args):
