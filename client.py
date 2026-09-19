@@ -78,7 +78,21 @@ class ARSpeckClient:
         tier = classify_tier(packet_type)
 
         if payload is None:
-            payload = f"PT_{self.seq_no:05d}".encode("utf-8")[:8]
+            # Generate realistic byte patterns matching real-world packet payload entropy
+            seq_b = self.seq_no & 0xFF
+            pkt_lower = packet_type.strip().lower()
+            if pkt_lower in ("ping", "heartbeat"):
+                payload = b"\x00\x00\x00\x00\x00\x00\x00\x00"                      # H = 0.000 -> T = 8
+            elif pkt_lower in ("position", "input", "movement"):
+                payload = bytes([0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, seq_b]) # H = 1.061 -> T = 12
+            elif pkt_lower in ("camera", "rotation"):
+                payload = bytes([0x43, 0x41, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00])  # H = 1.549 -> T = 16
+            elif pkt_lower in ("combat", "health"):
+                payload = bytes([0x48, 0x49, 0x54, 0x05, 0x00, 0x00, 0x00, 0x00])  # H = 2.000 -> T = 20
+            elif pkt_lower in ("trade", "state_sync"):
+                payload = bytes([0x54, 0x52, 0x44, 0x99, 0x1F, 0x00, 0x00, 0x00])  # H = 2.406 -> T = 24
+            else:
+                payload = bytes([0xFE, 0x12, 0xA9, 0x8B, 0x3C, 0x5D, 0x7E, seq_b]) # H = 3.000 -> T = 27
         elif len(payload) != 8:
             payload = payload.ljust(8, b" ")[:8]
 

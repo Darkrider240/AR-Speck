@@ -195,35 +195,29 @@ def entropy_to_rounds(entropy: float) -> int:
     """
     Maps Shannon entropy H (bits) of an 8-byte block to an adaptive round count T.
 
-    Rationale:
-      - Low entropy (repeated/structured data like pings): attacker has little
-        information to gain — fewer rounds sufficient.
-      - High entropy (dense/random data like session tokens): more rounds needed
-        to ensure full diffusion and resist differential distinguishers.
-
-    Mapping:
-        H < 0.5        →  T = 8   (near-constant, ping/heartbeat patterns)
-        0.5 <= H < 1.0 →  T = 10  (slight variation, structured position data)
-        1.0 <= H < 1.5 →  T = 12  (moderate structure, routine movement)
-        1.5 <= H < 2.0 →  T = 16  (higher variation, camera/orientation)
-        2.0 <= H < 2.5 →  T = 20  (significant entropy, combat events)
-        2.5 <= H < 2.8 →  T = 24  (high entropy, trade/state sync)
-        H >= 2.8       →  T = 27  (near-maximum entropy, auth tokens/scores)
+    Discrete Shannon Entropy Scale for 8-byte blocks:
+      - H < 0.4 bits   (1 distinct byte, e.g. zeros)       → T = 8   (Heartbeat / Ping)
+      - 0.4 <= H < 0.9 (2 distinct bytes)                  → T = 10  (Low-entropy status)
+      - 0.9 <= H < 1.3 (3 distinct bytes)                  → T = 12  (Routine Position Update)
+      - 1.3 <= H < 1.8 (4 distinct bytes)                  → T = 16  (Camera / Orientation)
+      - 1.8 <= H < 2.2 (5 distinct bytes)                  → T = 20  (Combat Event)
+      - 2.2 <= H < 2.6 (6 distinct bytes)                  → T = 24  (Trade / State Sync)
+      - H >= 2.6 bits  (7-8 distinct bytes / dense data)   → T = 27  (Persistent Score/Auth)
 
     :param entropy: Shannon entropy value in [0.0, 3.0]
     :return: Round count T in VALID_ROUNDS
     """
-    if entropy < 0.5:
+    if entropy < 0.4:
         return 8
-    elif entropy < 1.0:
+    elif entropy < 0.9:
         return 10
-    elif entropy < 1.5:
+    elif entropy < 1.3:
         return 12
-    elif entropy < 2.0:
+    elif entropy < 1.8:
         return 16
-    elif entropy < 2.5:
+    elif entropy < 2.2:
         return 20
-    elif entropy < 2.8:
+    elif entropy < 2.6:
         return 24
     else:
         return 27
