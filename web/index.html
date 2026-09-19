@@ -122,11 +122,11 @@
                     <!-- Client Granular Tier Injector Card -->
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3>Granular Tier Traffic Generator</h3>
-                            <span class="panel-sub">6 Adaptive Tiers</span>
+                            <h3>Granular Packet Traffic Generator</h3>
+                            <span class="panel-sub">Baseline Tiers + Shannon Entropy Engine</span>
                         </div>
                         <div class="panel-body">
-                            <p class="panel-desc">Select round count tier based on payload data lifetime and sensitivity classification.</p>
+                            <p class="panel-desc">Inject sample game packets. The Shannon Entropy Engine calculates dynamic round count T per block (H &rarr; T), using these baseline sensitivity bounds as fallbacks.</p>
                             
                             <div class="tier-grid">
                                 <button class="action-btn tier-btn" onclick="sendPacket('ping')">
@@ -273,7 +273,8 @@
                                         <span>Ciphertext Byte Distribution</span>
                                         <span class="mono-text chart-stat">0..255 Uniformity</span>
                                     </div>
-                            </div>
+                                    <canvas id="canvas-histogram" width="400" height="110"></canvas>
+                                </div>
                         </div>
                     </div>
 
