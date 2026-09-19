@@ -357,7 +357,7 @@ def run_phase6_tests():
     print("  AR-SPECK PHASE 6: MASTER PERFORMANCE & SECURITY TRADE-OFF SUITE   ")
     print("=" * 95)
     
-    rows, aes_data, mac_data = run_master_benchmarks(num_blocks=50000)
+    rows, aes_data, chacha_data, mac_data = run_master_benchmarks(num_blocks=50000)
     
     print("\n" + "-" * 95)
     print(f"{'Round Count':<12} | {'Throughput (blk/s)':<18} | {'Cipher Lat (µs)':<16} | {'MAC Lat (µs)':<14} | {'Avg Av (%)':<10} | {'Randomness':<10}")

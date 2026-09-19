@@ -151,14 +151,72 @@ def measure_aes128_baseline(num_blocks: int = 100000) -> dict:
     }
 
 
+def measure_chacha20_baseline(num_blocks: int = 100000) -> dict:
+    """
+    Measures ChaCha20 baseline encryption and decryption throughput and latency.
+    Requires pycryptodome (Crypto.Cipher.ChaCha20).
+    """
+    try:
+        from Crypto.Cipher import ChaCha20
+    except ImportError:
+        return None
+
+    key = bytes.fromhex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+    nonce = bytes.fromhex("0000000000000000")
+    raw_payloads = [f"P_{i:06d}".encode("utf-8")[:8] for i in range(num_blocks)]
+
+    # 1. ChaCha20 Encryption
+    ciphertexts = []
+    t0 = time.perf_counter()
+    for p in raw_payloads:
+        cipher = ChaCha20.new(key=key, nonce=nonce)
+        ciphertexts.append(cipher.encrypt(p))
+    t1 = time.perf_counter()
+
+    enc_total_time = t1 - t0
+    enc_blocks_per_sec = num_blocks / enc_total_time if enc_total_time > 0 else 0
+    enc_latency_us = (enc_total_time / num_blocks) * 1e6
+    enc_mb_per_sec = (num_blocks * 8) / (enc_total_time * 1024 * 1024)
+
+    # 2. ChaCha20 Decryption
+    t0 = time.perf_counter()
+    for c in ciphertexts:
+        cipher = ChaCha20.new(key=key, nonce=nonce)
+        cipher.decrypt(c)
+    t1 = time.perf_counter()
+
+    dec_total_time = t1 - t0
+    dec_blocks_per_sec = num_blocks / dec_total_time if dec_total_time > 0 else 0
+    dec_latency_us = (dec_total_time / num_blocks) * 1e6
+    dec_mb_per_sec = (num_blocks * 8) / (dec_total_time * 1024 * 1024)
+
+    return {
+        "cipher": "ChaCha20",
+        "num_blocks": num_blocks,
+        "enc_time_sec": enc_total_time,
+        "enc_blocks_per_sec": enc_blocks_per_sec,
+        "enc_latency_us": enc_latency_us,
+        "enc_mb_per_sec": enc_mb_per_sec,
+        "dec_time_sec": dec_total_time,
+        "dec_blocks_per_sec": dec_blocks_per_sec,
+        "dec_latency_us": dec_latency_us,
+        "dec_mb_per_sec": dec_mb_per_sec,
+        "note": "Stream cipher baseline used in WireGuard/QUIC"
+    }
+
+
 if __name__ == "__main__":
     print("Running Throughput & Latency Benchmarks (100,000 blocks)...")
-    for r in [27, 20, 12]:
+    for r in [8, 12, 16, 20, 24, 27]:
         res = measure_speck_throughput(rounds=r, num_blocks=100000)
         print(f"  SPECK64 T={r:2d} -> Enc: {res['enc_blocks_per_sec']:,.0f} blocks/s ({res['enc_latency_us']:.3f} µs/blk), "
               f"Dec: {res['dec_blocks_per_sec']:,.0f} blocks/s ({res['dec_latency_us']:.3f} µs/blk)")
 
     aes_res = measure_aes128_baseline(num_blocks=100000)
     if aes_res:
-        print(f"  AES-128 Baseline -> Enc: {aes_res['enc_blocks_per_sec']:,.0f} blocks/s ({aes_res['enc_latency_us']:.3f} µs/blk), "
-              f"Dec: {aes_res['dec_blocks_per_sec']:,.0f} blocks/s ({aes_res['dec_latency_us']:.3f} µs/blk)")
+        print(f"  AES-128 Baseline -> Enc: {aes_res['enc_blocks_per_sec']:,.0f} blocks/s ({aes_res['enc_latency_us']:.3f} µs/blk)")
+
+    chacha_res = measure_chacha20_baseline(num_blocks=100000)
+    if chacha_res:
+        print(f"  ChaCha20 Baseline -> Enc: {chacha_res['enc_blocks_per_sec']:,.0f} blocks/s ({chacha_res['enc_latency_us']:.3f} µs/blk)")
+

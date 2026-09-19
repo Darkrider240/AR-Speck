@@ -31,7 +31,7 @@ def run_crypto_suite(trials: int = 1000, num_blocks: int = 1000,
     if csv_filepath is None:
         csv_filepath = os.path.join(os.path.dirname(__file__), "results.csv")
 
-    round_counts = [27, 20, 12]
+    round_counts = [8, 12, 16, 20, 24, 27]
     results = []
     all_passed = True
 

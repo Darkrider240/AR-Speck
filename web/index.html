@@ -3,39 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR-SPECK Security Operations Center & Cryptographic Evaluator</title>
+    <title>AR-SPECK Cryptographic Telemetry & Protocol Evaluation Panel</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
-        <!-- Top Header Navigation -->
+        <!-- Header Navigation -->
         <header class="header">
             <div class="header-left">
-                <div class="logo-box">
-                    <span class="logo-icon">🔒</span>
-                </div>
+                <div class="brand-mark">AR</div>
                 <div>
                     <div class="logo-title">
-                        <h2>AR-SPECK <span class="badge badge-tech">SPECK64/128</span></h2>
+                        <h2>AR-SPECK Protocol <span class="sub-tag">SPECK64/128</span></h2>
                     </div>
-                    <p class="logo-sub">Adaptive Round-Based Lightweight Cipher & Authenticated UDP Protocol</p>
+                    <p class="logo-sub">Adaptive-Round Lightweight Cipher & Authenticated UDP Transport Layer</p>
                 </div>
             </div>
 
             <div class="header-right">
                 <div class="status-indicator">
                     <span class="status-dot green pulse"></span>
-                    <span id="server-status">UDP SERVER LIVE (127.0.0.1:5000)</span>
+                    <span id="server-status" class="mono-text">UDP LISTENING 127.0.0.1:5000</span>
                 </div>
-                <div class="mode-pills">
+                <div class="nav-group">
                     <button class="nav-btn active" id="btn-nav-demo" onclick="showSection('demo')">
-                        <span class="btn-icon">⚡</span> Live Socket Control
+                        Live Socket Control
+                    </button>
+                    <button class="nav-btn" id="btn-nav-justification" onclick="showSection('justification')">
+                        Round Count Justification
                     </button>
                     <button class="nav-btn" id="btn-nav-bench" onclick="showSection('benchmarks')">
-                        <span class="btn-icon">📊</span> Security & Speed Benchmarks
+                        Security & Speed Benchmarks
                     </button>
-
                 </div>
             </div>
         </header>
@@ -43,168 +43,188 @@
         <!-- SECTION 1: LIVE SOCKET CONTROL & ADVERSARY DEMO -->
         <main id="sec-demo" class="sec-view active">
             
-            <!-- System Stats Bar -->
+            <!-- System Metrics Bar -->
             <div class="metrics-row">
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Processed Datagrams</span>
-                        <span class="metric-icon">📦</span>
                     </div>
-                    <div class="metric-value" id="stat-total">0</div>
-                    <div class="metric-foot">UDP Packets Received</div>
+                    <div class="metric-value mono-text" id="stat-total">0</div>
+                    <div class="metric-foot">UDP Datagrams Received</div>
                 </div>
 
                 <div class="metric-card success">
                     <div class="metric-header">
                         <span class="metric-label">Accepted Packets</span>
-                        <span class="metric-icon">✅</span>
                     </div>
-                    <div class="metric-value" id="stat-accepted">0</div>
-                    <div class="metric-foot" id="stat-accepted-pct">0.0% Pass Rate</div>
+                    <div class="metric-value mono-text" id="stat-accepted">0</div>
+                    <div class="metric-foot mono-text" id="stat-accepted-pct">0.0% Pass Rate</div>
                 </div>
 
                 <div class="metric-card danger">
                     <div class="metric-header">
-                        <span class="metric-label">MAC Failures (Tamper / Spoof)</span>
-                        <span class="metric-icon">🛡️</span>
+                        <span class="metric-label">MAC Rejections (Tamper/Spoof)</span>
                     </div>
-                    <div class="metric-value" id="stat-mac-drops">0</div>
-                    <div class="metric-foot">Dropped in Stage 1</div>
+                    <div class="metric-value mono-text" id="stat-mac-drops">0</div>
+                    <div class="metric-foot">Stage 1 Verification Failures</div>
                 </div>
 
                 <div class="metric-card warning">
                     <div class="metric-header">
-                        <span class="metric-label">Replay / Stale Rejections</span>
-                        <span class="metric-icon">🔄</span>
+                        <span class="metric-label">Replay Window Rejections</span>
                     </div>
-                    <div class="metric-value" id="stat-replay-drops">0</div>
-                    <div class="metric-foot">Dropped in Stage 2 Window</div>
+                    <div class="metric-value mono-text" id="stat-replay-drops">0</div>
+                    <div class="metric-foot">Stage 2 Replay/Stale Drops</div>
                 </div>
             </div>
 
             <!-- Workspace Grid -->
             <div class="workspace-grid">
                 
-                <!-- Column 1: Client & Attack Controller -->
+                <!-- Column 1: Power & Controls -->
                 <div class="workspace-col left-col">
 
                     <!-- System Power Controls Card -->
-                    <div class="panel-card power-card">
+                    <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">🔌</span> System Power Controls</h3>
-                            <span class="pill pill-blue">Live Process</span>
+                            <h3>System Power Controls</h3>
+                            <span class="panel-sub">Process State</span>
                         </div>
                         <div class="panel-body">
-                            <p class="panel-desc">Start or stop the UDP server and continuous client traffic stream. Buttons reflect real process state.</p>
+                            <p class="panel-desc">Manage UDP server socket binding and continuous client telemetry background loop.</p>
 
                             <div class="power-controls">
-                                <!-- UDP Server Toggle -->
                                 <div class="power-row">
                                     <div class="power-label">
-                                        <span class="power-icon">🖥️</span>
-                                        <div>
-                                            <div class="power-name">UDP Server</div>
-                                            <div class="power-desc">Binds 127.0.0.1:5000, processes authenticated datagrams</div>
-                                        </div>
+                                        <div class="power-name">UDP Server Engine</div>
+                                        <div class="power-desc">127.0.0.1:5000 socket listener</div>
                                     </div>
                                     <div class="power-right">
-                                        <span class="status-badge" id="server-badge">● RUNNING</span>
+                                        <span class="status-badge" id="server-badge">RUNNING</span>
                                         <button class="power-btn btn-stop" id="btn-server-toggle" onclick="toggleServer()">Stop Server</button>
                                     </div>
                                 </div>
 
-                                <!-- Client Streaming Toggle -->
                                 <div class="power-row">
                                     <div class="power-label">
-                                        <span class="power-icon">📡</span>
-                                        <div>
-                                            <div class="power-name">Client Stream</div>
-                                            <div class="power-desc">Continuous ~20 Hz UDP traffic (90% LOW / 10% HIGH packets)</div>
-                                        </div>
+                                        <div class="power-name">Client Stream Loop</div>
+                                        <div class="power-desc">Continuous ~20 Hz client stream</div>
                                     </div>
                                     <div class="power-right">
-                                        <span class="status-badge badge-off" id="client-badge">● IDLE</span>
-                                        <button class="power-btn btn-start" id="btn-client-toggle" onclick="toggleClientStream()">Start Stream</button>
+                                        <span class="status-badge" id="client-badge">STREAMING</span>
+                                        <button class="power-btn btn-stop" id="btn-client-toggle" onclick="toggleClientStream()">Stop Stream</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Traffic Injector Card -->
+                    <!-- Client Granular Tier Injector Card -->
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">🚀</span> Client Traffic Generator</h3>
-                            <span class="pill pill-green">Authenticated Client</span>
+                            <h3>Granular Tier Traffic Generator</h3>
+                            <span class="panel-sub">6 Adaptive Tiers</span>
                         </div>
                         <div class="panel-body">
-                            <p class="panel-desc">Classifies packet type, applies SPECK round tiering, appends HMAC-SHA256 MAC, and transmits over local UDP socket.</p>
+                            <p class="panel-desc">Select round count tier based on payload data lifetime and sensitivity classification.</p>
                             
-                            <div class="control-actions">
-                                <button class="action-btn btn-tier-low" onclick="sendPacket('position')">
+                            <div class="tier-grid">
+                                <button class="action-btn tier-btn" onclick="sendPacket('ping')">
                                     <div class="btn-top">
-                                        <span class="btn-title">Send Position Update</span>
-                                        <span class="tag tag-low">LOW TIER</span>
+                                        <span class="btn-title">Ping / Heartbeat</span>
+                                        <span class="tier-code mono-text">T=8</span>
                                     </div>
-                                    <div class="btn-sub">12 SPECK Rounds &bull; Routine Traffic</div>
+                                    <div class="btn-sub">8 Rounds &bull; Ultra-Low Latency</div>
                                 </button>
 
-                                <button class="action-btn btn-tier-high" onclick="sendPacket('score')">
+                                <button class="action-btn tier-btn" onclick="sendPacket('position')">
                                     <div class="btn-top">
-                                        <span class="btn-title">Send Score / Item Packet</span>
-                                        <span class="tag tag-high">HIGH TIER</span>
+                                        <span class="btn-title">Position Vector</span>
+                                        <span class="tier-code mono-text">T=12</span>
                                     </div>
-                                    <div class="btn-sub">27 SPECK Rounds &bull; Critical Mutation</div>
+                                    <div class="btn-sub">12 Rounds &bull; Routine Movement</div>
                                 </button>
 
-                                <button class="action-btn btn-burst" onclick="sendBurst()">
+                                <button class="action-btn tier-btn" onclick="sendPacket('camera')">
                                     <div class="btn-top">
-                                        <span class="btn-title">Fire 20-Packet Burst</span>
-                                        <span class="tag tag-burst">90% LOW / 10% HIGH</span>
+                                        <span class="btn-title">Camera / Rotation</span>
+                                        <span class="tier-code mono-text">T=16</span>
                                     </div>
-                                    <div class="btn-sub">Simulates High-Rate UDP Game Loop</div>
+                                    <div class="btn-sub">16 Rounds &bull; View Direction</div>
+                                </button>
+
+                                <button class="action-btn tier-btn" onclick="sendPacket('combat')">
+                                    <div class="btn-top">
+                                        <span class="btn-title">Combat / Health Event</span>
+                                        <span class="tier-code mono-text">T=20</span>
+                                    </div>
+                                    <div class="btn-sub">20 Rounds &bull; Medium Sensitivity</div>
+                                </button>
+
+                                <button class="action-btn tier-btn" onclick="sendPacket('trade')">
+                                    <div class="btn-top">
+                                        <span class="btn-title">Trade Draft / State</span>
+                                        <span class="tier-code mono-text">T=24</span>
+                                    </div>
+                                    <div class="btn-sub">24 Rounds &bull; High Sensitivity</div>
+                                </button>
+
+                                <button class="action-btn tier-btn" onclick="sendPacket('score')">
+                                    <div class="btn-top">
+                                        <span class="btn-title">Score / Inventory</span>
+                                        <span class="tier-code mono-text">T=27</span>
+                                    </div>
+                                    <div class="btn-sub">27 Rounds &bull; Full Margin</div>
                                 </button>
                             </div>
+
+                            <button class="action-btn btn-burst" onclick="sendBurst()">
+                                <div class="btn-top">
+                                    <span class="btn-title">Fire 20-Packet Mixed Telemetry Burst</span>
+                                    <span class="tier-code mono-text">20 PKTS</span>
+                                </div>
+                                <div class="btn-sub">Simulates High-Rate Multi-Tier Game Loop Stream</div>
+                            </button>
                         </div>
                     </div>
 
                     <!-- Adversary Attack Injector Card -->
                     <div class="panel-card attack-card">
                         <div class="panel-head">
-                            <h3><span class="icon">⚠️</span> Adversary Attack Injector</h3>
-                            <span class="pill pill-red">Phase 4 Attacks</span>
+                            <h3>Adversary Attack Suite</h3>
+                            <span class="panel-sub">Phase 4 Verifications</span>
                         </div>
                         <div class="panel-body">
-                            <p class="panel-desc">Fires standalone network attacks against the live UDP server to prove security defense invariants.</p>
+                            <p class="panel-desc">Inject standalone network attacks against the live UDP socket to verify defense invariants.</p>
                             
                             <div class="control-actions">
                                 <button class="action-btn btn-attack" onclick="triggerAttack('tamper')">
                                     <div class="btn-top">
                                         <span class="btn-title">Ciphertext Bit-Flip Attack</span>
-                                        <span class="tag tag-drop">EXPECTS BAD_MAC</span>
+                                        <span class="mono-text drop-target">EXPECTS BAD_MAC</span>
                                     </div>
-                                    <div class="btn-sub">MitM tampers byte in transit &bull; Decryption skipped</div>
+                                    <div class="btn-sub">MitM tampers ciphertext byte &bull; Decryption skipped</div>
                                 </button>
 
                                 <button class="action-btn btn-attack" onclick="triggerAttack('replay')">
                                     <div class="btn-top">
                                         <span class="btn-title">Packet Replay Attack</span>
-                                        <span class="tag tag-drop">EXPECTS REPLAY DROP</span>
+                                        <span class="mono-text drop-target">EXPECTS REPLAY DROP</span>
                                     </div>
-                                    <div class="btn-sub">Sniffs valid packet and re-transmits exact bytes</div>
+                                    <div class="btn-sub">Sniffs valid datagram and re-transmits duplicate</div>
                                 </button>
 
                                 <button class="action-btn btn-attack" onclick="triggerAttack('spoof')">
                                     <div class="btn-top">
                                         <span class="btn-title">Key Spoofing Attack</span>
-                                        <span class="tag tag-drop">EXPECTS BAD_MAC</span>
+                                        <span class="mono-text drop-target">EXPECTS BAD_MAC</span>
                                     </div>
-                                    <div class="btn-sub">Unauthorized sender encrypts with wrong key</div>
+                                    <div class="btn-sub">Unauthorized sender encrypts with invalid key</div>
                                 </button>
                             </div>
 
                             <button class="btn-reset" onclick="resetState()">
-                                <span>🔄 Reset Server State & Sequence Window</span>
+                                Clear Telemetry & Reset Replay Window
                             </button>
                         </div>
                     </div>
@@ -217,19 +237,44 @@
                     <!-- 64-Bit Sliding Window Monitor -->
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">🪟</span> 64-Bit Sliding Window Register</h3>
-                            <span class="meta-info" id="window-range-info">Highest Seq (max_seq): None</span>
+                            <h3>64-Bit Sliding Window Register</h3>
+                            <span class="meta-info mono-text" id="window-range-info">Highest Seq (max_seq): None</span>
                         </div>
                         <div class="panel-body">
-                            <div class="window-legend">
+                            <div class="window-legend mono-text">
                                 <span><span class="dot set-dot"></span> Bit 0 = max_seq</span>
                                 <span><span class="dot offset-dot"></span> Bit Offset = max_seq - seq_no</span>
                                 <span><span class="dot unseen-dot"></span> Dark = Unseen Slot</span>
                             </div>
                             
-                            <!-- 64-bit Hardware Register View (MSB 63 down to LSB 0) -->
-                            <div class="register-grid" id="register-grid">
+                            <div class="register-grid mono-text" id="register-grid">
                                 <!-- 64 bits generated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Real-Time Telemetry Charts (Latency & Histogram) -->
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <h3>Live Telemetry Diagnostics</h3>
+                            <span class="panel-sub">Real-Time Canvas Telemetry</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="telemetry-grid">
+                                <div class="chart-box">
+                                    <div class="chart-title-bar">
+                                        <span>Rolling Processing Latency (&mu;s)</span>
+                                        <span class="mono-text chart-stat" id="stat-latency-val">0.0 &mu;s</span>
+                                    </div>
+                                    <canvas id="canvas-latency" width="400" height="110"></canvas>
+                                </div>
+                                <div class="chart-box">
+                                    <div class="chart-title-bar">
+                                        <span>Ciphertext Byte Distribution</span>
+                                        <span class="mono-text chart-stat">0..255 Uniformity</span>
+                                    </div>
+                                    <canvas id="canvas-histogram" width="400" height="110"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -237,20 +282,20 @@
                     <!-- 21-Byte Wire Packet Inspector -->
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">🔍</span> Authenticated Wire Packet Byte Inspector (21 Bytes)</h3>
-                            <span class="pill pill-blue">Fixed Layout</span>
+                            <h3>Authenticated Wire Packet Inspector (21 Bytes)</h3>
+                            <span class="panel-sub">Fixed Layout</span>
                         </div>
                         <div class="panel-body">
-                            <div class="wire-inspector" id="wire-inspector">
+                            <div class="wire-inspector mono-text" id="wire-inspector">
                                 <div class="wire-field f-tier">
                                     <span class="f-label">Tier ID</span>
-                                    <span class="f-bytes" id="inp-tier-hex">0x01</span>
-                                    <span class="f-desc" id="inp-tier-desc">1 Byte (LOW)</span>
+                                    <span class="f-bytes" id="inp-tier-hex">0x0C</span>
+                                    <span class="f-desc" id="inp-tier-desc">1 Byte (LOW / T=12)</span>
                                 </div>
                                 <div class="wire-field f-ct">
                                     <span class="f-label">SPECK64 Ciphertext</span>
                                     <span class="f-bytes" id="inp-ct-hex">00 00 00 00 00 00 00 00</span>
-                                    <span class="f-desc" id="inp-ct-desc">8 Bytes (SPECK Payload)</span>
+                                    <span class="f-desc" id="inp-ct-desc">8 Bytes (Encrypted Payload)</span>
                                 </div>
                                 <div class="wire-field f-seq">
                                     <span class="f-label">Sequence No</span>
@@ -269,10 +314,10 @@
                     <!-- Console Event Log Stream -->
                     <div class="panel-card console-card">
                         <div class="panel-head">
-                            <h3><span class="icon">💻</span> Live Server Security Log Console</h3>
-                            <button class="btn-clear" onclick="clearConsole()">Clear Console</button>
+                            <h3>Live Security Log Console</h3>
+                            <button class="btn-clear mono-text" onclick="clearConsole()">Clear Console</button>
                         </div>
-                        <div class="console-body" id="console-output">
+                        <div class="console-body mono-text" id="console-output">
                             <div class="c-line c-info">[SYSTEM] Presentation server listening on UDP 127.0.0.1:5000...</div>
                             <div class="c-line c-info">[SYSTEM] Ready for live traffic and attack simulation.</div>
                         </div>
@@ -283,81 +328,297 @@
             </div>
         </main>
 
-        <!-- SECTION 2: SECURITY & SPEED BENCHMARKS -->
-        <main id="sec-benchmarks" class="sec-view">
-            <div class="benchmarks-container">
+        <!-- SECTION 2: DEDICATED ROUND COUNT JUSTIFICATION -->
+        <main id="sec-justification" class="sec-view">
+            <div class="justification-container">
                 
-                <!-- Trade-Off Master Table -->
                 <div class="panel-card">
                     <div class="panel-head">
-                        <h3><span class="icon">📋</span> Master Security vs. Performance Trade-Off Table</h3>
-                        <span class="pill pill-green">Phase 5 & 6 Benchmarks</span>
+                        <h3>Cryptanalytic Security Margin & Round Count Justification</h3>
+                        <span class="panel-sub">Threat-Modeling & Cryptanalysis Basis</span>
                     </div>
                     <div class="panel-body">
-                        <p class="panel-desc">Quantifies the exact latency savings achieved by reducing round counts for routine movement traffic while demonstrating preserved crypto quality.</p>
+                        
+                        <div class="justification-header-box">
+                            <h4>SPECK64/128 Specification vs. Published Cryptanalysis Thresholds</h4>
+                            <p>Standard SPECK64/128 consists of <strong>27 rounds</strong>. Published differential cryptanalysis (Abed, List, Lucks, Wenzel, 2013) broke up to 15/27 rounds. Subsequent work (Dinur, SAC 2014, using Meet-in-the-Middle techniques) extended the best known theoretical attack to <strong>20/27 rounds</strong> (~74% of the full cipher).</p>
+                        </div>
+
+                        <!-- Visual Cryptanalysis Scale & Ruler -->
+                        <div class="ruler-wrapper">
+                            <div class="ruler-top-labels mono-text">
+                                <div class="r-label lab-abed" style="left: 55.55%;">
+                                    <span class="lab-title">15 Rounds</span>
+                                    <span class="lab-sub">Abed et al. (2013)</span>
+                                </div>
+                                <div class="r-label lab-dinur" style="left: 74.07%;">
+                                    <span class="lab-title">20 Rounds</span>
+                                    <span class="lab-sub">Dinur / Best Attack (2014)</span>
+                                </div>
+                                <div class="r-label lab-full" style="left: 100%;">
+                                    <span class="lab-title">27 Rounds</span>
+                                    <span class="lab-sub">Full Specification</span>
+                                </div>
+                            </div>
+
+                            <div class="ruler-bar-track">
+                                <div class="ruler-attack-fill" style="width: 74.07%;"></div>
+                                
+                                <!-- Tiers placed on track -->
+                                <div class="tier-pin pin-t8" style="left: 29.62%;" title="T=8 Heartbeat">
+                                    <span class="pin-tag mono-text">T=8</span>
+                                </div>
+                                <div class="tier-pin pin-t12" style="left: 44.44%;" title="T=12 Position">
+                                    <span class="pin-tag mono-text">T=12</span>
+                                </div>
+                                <div class="tier-pin pin-t16" style="left: 59.25%;" title="T=16 Camera">
+                                    <span class="pin-tag mono-text">T=16</span>
+                                </div>
+                                <div class="tier-pin pin-t20" style="left: 74.07%;" title="T=20 Combat">
+                                    <span class="pin-tag mono-text">T=20</span>
+                                </div>
+                                <div class="tier-pin pin-t24" style="left: 88.88%;" title="T=24 Trade">
+                                    <span class="pin-tag mono-text">T=24</span>
+                                </div>
+                                <div class="tier-pin pin-t27" style="left: 100%;" title="T=27 Score">
+                                    <span class="pin-tag mono-text">T=27</span>
+                                </div>
+                            </div>
+
+                            <div class="ruler-bottom-ticks mono-text">
+                                <span>0 Rounds</span>
+                                <span>7 Rounds</span>
+                                <span>14 Rounds</span>
+                                <span>20 Rounds (74% Attack)</span>
+                                <span>27 Rounds (Full)</span>
+                            </div>
+                        </div>
+
+                        <!-- Threat Modeling Rationale & Limitation Statement -->
+                        <div class="justification-content">
+                            <div class="justification-block">
+                                <h4>Data Lifetime & Threat-Modeling Rationale</h4>
+                                <p>In high-frequency UDP game networking (60–120 Hz), packet contents have vastly different security data lifetimes:</p>
+                                <ul>
+                                    <li><strong>Ephemeral Routine Telemetry (T=8, T=12, T=16 Rounds):</strong> Position vectors, view rotations, and heartbeats describe game state valid only for a single network tick (8–16 ms). By the time an adversary could theoretically capture and attempt cryptanalysis on a single packet payload, that movement vector is already stale and obsolete.</li>
+                                    <li><strong>Persistent State Mutations (T=20, T=24, T=27 Rounds):</strong> Score updates, inventory transactions, player spawn events, and authentication carry long-term persistent value and are encrypted at or above the 20-round cryptanalytic threshold up to full 27-round security margin.</li>
+                                </ul>
+                            </div>
+
+                            <div class="warning-callout">
+                                <h4>Explicit Security Limitation & Boundary Statement:</h4>
+                                <p>Adaptive round tiering is a <em>context-aware threat-modeling trade-off based on ephemeral data lifetime</em>. It is <strong>not</strong> a claim that reduced-round SPECK (e.g. T=12) is unconditionally secure against offline cryptanalysis. For data requiring long-term confidentiality beyond single-frame lifetime, full 27-round encryption must be used.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- SECTION 3: SECURITY & SPEED BENCHMARKS -->
+        <main id="sec-benchmarks" class="sec-view">
+            <div class="benchmarks-container">
+
+                <!-- Side-by-Side Live Comparison Analyzer Card -->
+                <div class="panel-card analyzer-card">
+                    <div class="panel-head">
+                        <h3>Side-by-Side Wire Overhead & Padding Analyzer (SPECK64 vs AES-128)</h3>
+                        <span class="panel-sub">Payload Padding & Bandwidth Analysis</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="analyzer-slider-box">
+                            <div class="slider-top">
+                                <label for="payload-size-slider">Test Payload Vector Size:</label>
+                                <span class="mono-text" id="payload-slider-val">8 Bytes (Position Vector)</span>
+                            </div>
+                            <input type="range" id="payload-size-slider" min="1" max="32" value="8" oninput="updateComparisonAnalyzer(this.value)">
+                        </div>
+
+                        <div class="comparison-grid">
+                            <!-- SPECK64 Side -->
+                            <div class="comp-col speck-col">
+                                <div class="comp-head">
+                                    <h4>AR-SPECK64/128</h4>
+                                    <span class="comp-badge badge-speck">Native 8-Byte Block</span>
+                                </div>
+                                <div class="comp-metrics mono-text">
+                                    <div class="comp-row">
+                                        <span>Native Block Size:</span>
+                                        <strong>8 Bytes</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Forced PKCS#7 Padding:</span>
+                                        <strong class="text-green" id="speck-pad-val">0 Bytes (0% Waste)</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Raw Ciphertext Output:</span>
+                                        <strong id="speck-ct-val">8 Bytes</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Total Wire Datagram:</span>
+                                        <strong class="text-green" id="speck-wire-val">21 Bytes</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Bandwidth Wasted (1k Players @ 120Hz):</span>
+                                        <strong class="text-green" id="speck-bw-val">0 KB / sec</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Hardware Requirement:</span>
+                                        <span>Pure Software (Zero S-Box)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AES-128 Side -->
+                            <div class="comp-col aes-col">
+                                <div class="comp-head">
+                                    <h4>AES-128 (Standard TLS/Datagram)</h4>
+                                    <span class="comp-badge badge-aes">Forced 16-Byte Block</span>
+                                </div>
+                                <div class="comp-metrics mono-text">
+                                    <div class="comp-row">
+                                        <span>Native Block Size:</span>
+                                        <strong>16 Bytes</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Forced PKCS#7 Padding:</span>
+                                        <strong class="text-red" id="aes-pad-val">8 Bytes (100% Waste!)</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Raw Ciphertext Output:</span>
+                                        <strong id="aes-ct-val">16 Bytes</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Total Wire Datagram:</span>
+                                        <strong class="text-red" id="aes-wire-val">37 Bytes (+76% Expansion)</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Bandwidth Wasted (1k Players @ 120Hz):</span>
+                                        <strong class="text-red" id="aes-bw-val">960 KB / sec (~1 MB/s Padding Waste!)</strong>
+                                    </div>
+                                    <div class="comp-row">
+                                        <span>Hardware Requirement:</span>
+                                        <span>Requires AES-NI CPU Silicon</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Master Trade-Off Table -->
+                <div class="panel-card">
+                    <div class="panel-head">
+                        <h3>Master Security vs. Performance Trade-Off Table</h3>
+                        <span class="panel-sub">Phase 5 & 6 Measured Results</span>
+                    </div>
+                    <div class="panel-body">
+                        <p class="panel-desc">Empirical throughput and per-block latency measured across 6 SPECK round tiers, alongside AES-128 and ChaCha20 baselines.</p>
                         
                         <div class="table-wrapper">
-                            <table class="bench-table">
+                            <table class="bench-table mono-text">
                                 <thead>
                                     <tr>
                                         <th>Sensitivity Tier</th>
                                         <th>Round Count (T)</th>
-                                        <th>Encryption Speed</th>
-                                        <th>Cipher Latency</th>
-                                        <th>MAC Overhead</th>
-                                        <th>Total Latency</th>
+                                        <th>Throughput (blk/s)</th>
+                                        <th>Cipher Latency (&mu;s)</th>
+                                        <th>MAC Overhead (&mu;s)</th>
+                                        <th>Total Latency (&mu;s)</th>
                                         <th>Avalanche %</th>
                                         <th>NIST Randomness</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><span class="tier-badge t-high">TIER_HIGH (Score/Item)</span></td>
-                                        <td><strong>27 Rounds</strong></td>
-                                        <td>54,626 blk/s</td>
-                                        <td>18.306 &mu;s</td>
-                                        <td>3.529 &mu;s</td>
-                                        <td>21.836 &mu;s</td>
-                                        <td>50.24% (Ideal)</td>
-                                        <td><span class="pill pill-green">PASS (p &gt; 0.01)</span></td>
+                                        <td>HIGH TIER (Score/Inventory)</td>
+                                        <td>27 Rounds</td>
+                                        <td>37,592</td>
+                                        <td>26.601</td>
+                                        <td>7.000</td>
+                                        <td>33.601</td>
+                                        <td>50.02%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
                                     </tr>
                                     <tr>
-                                        <td><span class="tier-badge t-med">MEDIUM TIER</span></td>
-                                        <td><strong>20 Rounds</strong></td>
-                                        <td>87,821 blk/s</td>
-                                        <td>11.387 &mu;s</td>
-                                        <td>3.529 &mu;s</td>
-                                        <td>14.916 &mu;s</td>
-                                        <td>50.12% (Ideal)</td>
-                                        <td><span class="pill pill-green">PASS (p &gt; 0.01)</span></td>
+                                        <td>TRADE TIER (State Sync)</td>
+                                        <td>24 Rounds</td>
+                                        <td>41,583</td>
+                                        <td>24.048</td>
+                                        <td>7.000</td>
+                                        <td>31.048</td>
+                                        <td>49.71%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>COMBAT TIER (Health Event)</td>
+                                        <td>20 Rounds</td>
+                                        <td>50,932</td>
+                                        <td>19.634</td>
+                                        <td>7.000</td>
+                                        <td>26.634</td>
+                                        <td>50.03%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>CAMERA TIER (Rotation)</td>
+                                        <td>16 Rounds</td>
+                                        <td>54,802</td>
+                                        <td>18.247</td>
+                                        <td>7.000</td>
+                                        <td>25.247</td>
+                                        <td>50.11%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
                                     </tr>
                                     <tr class="row-highlight">
-                                        <td><span class="tier-badge t-low">TIER_LOW (Position)</span></td>
-                                        <td><strong>12 Rounds</strong></td>
-                                        <td><strong>141,368 blk/s</strong></td>
-                                        <td><strong>7.074 &mu;s</strong></td>
-                                        <td>3.529 &mu;s</td>
-                                        <td><strong>10.603 &mu;s</strong></td>
-                                        <td>50.05% (Ideal)</td>
-                                        <td><span class="pill pill-green">PASS (p &gt; 0.01)</span></td>
+                                        <td>LOW TIER (Position Vector)</td>
+                                        <td>12 Rounds</td>
+                                        <td>85,904</td>
+                                        <td>11.641</td>
+                                        <td>7.000</td>
+                                        <td>18.641</td>
+                                        <td>50.09%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
                                     </tr>
-                                    <tr>
-                                        <td><span class="tier-badge t-aes">AES-128 Baseline</span></td>
+                                    <tr class="row-highlight">
+                                        <td>HEARTBEAT TIER (Ping Stream)</td>
+                                        <td>8 Rounds</td>
+                                        <td>131,863</td>
+                                        <td>7.584</td>
+                                        <td>7.000</td>
+                                        <td>14.584</td>
+                                        <td>49.99%</td>
+                                        <td><span class="status-pass">PASS (p &gt; 0.01)</span></td>
+                                    </tr>
+                                    <tr class="row-baseline">
+                                        <td>AES-128 ECB Baseline</td>
                                         <td>10 Rounds (AES)</td>
-                                        <td>646,810 blk/s</td>
-                                        <td>1.546 &mu;s</td>
+                                        <td>321,709</td>
+                                        <td>3.108</td>
                                         <td>N/A</td>
-                                        <td>1.546 &mu;s</td>
+                                        <td>3.108</td>
                                         <td>50.00%</td>
-                                        <td><span class="pill pill-green">PASS</span></td>
+                                        <td><span class="status-pass">PASS</span></td>
+                                    </tr>
+                                    <tr class="row-baseline">
+                                        <td>ChaCha20 Stream Baseline</td>
+                                        <td>20 Rounds (ChaCha)</td>
+                                        <td>115,584</td>
+                                        <td>8.652</td>
+                                        <td>N/A</td>
+                                        <td>8.652</td>
+                                        <td>50.00%</td>
+                                        <td><span class="status-pass">PASS</span></td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
                         <div class="callout-box">
-                            <h4>💡 Key Performance Finding:</h4>
-                            <p>Reducing round count from T=27 to T=12 reduces SPECK encryption latency from <strong>18.306 &mu;s down to 7.074 &mu;s</strong> per block — a <strong>2.58&times; speedup (61.3% latency reduction)</strong>. Because SPECK64 operates natively on 8-byte blocks without AES's 16-byte padding overhead, it conserves UDP payload size over network paths.</p>
+                            <h4>Key Performance Finding:</h4>
+                            <p>Reducing round count from T=27 to T=12 reduces SPECK encryption latency from <strong>26.601 &mu;s down to 11.641 &mu;s</strong> per block — a <strong>2.28&times; speedup (56.2% cipher latency reduction)</strong>. Because SPECK64 operates natively on 8-byte blocks without AES's 16-byte padding overhead, it conserves UDP payload wire size over high-frequency network paths.</p>
                         </div>
                     </div>
                 </div>
@@ -366,7 +627,7 @@
                 <div class="charts-grid">
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">📈</span> Throughput Comparison (blocks / second)</h3>
+                            <h3>Throughput Comparison Across Tiers & Baselines</h3>
                         </div>
                         <div class="panel-body img-container">
                             <img src="/throughput_vs_rounds.png" alt="Throughput Benchmark Chart" onerror="this.parentElement.innerHTML='<p class=no-img>Run benchmarks/results.py to generate PNG chart</p>'">
@@ -375,7 +636,7 @@
 
                     <div class="panel-card">
                         <div class="panel-head">
-                            <h3><span class="icon">🎲</span> Avalanche Diffusion (% Bits Flipped)</h3>
+                            <h3>Avalanche Diffusion vs Round Count (8..27)</h3>
                         </div>
                         <div class="panel-body img-container">
                             <img src="/avalanche_vs_rounds.png" alt="Avalanche Diffusion Chart" onerror="this.parentElement.innerHTML='<p class=no-img>Run benchmarks/results.py to generate PNG chart</p>'">

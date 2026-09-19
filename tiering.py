@@ -19,44 +19,71 @@ Design Invariant:
 # -----------------------------------------------------------------------------
 # Tier Identifiers & Numerical IDs (used in binary wire headers)
 # -----------------------------------------------------------------------------
-TIER_LOW = "LOW"
-TIER_HIGH = "HIGH"
+TIER_T8  = "T8_HEARTBEAT"
+TIER_LOW = "LOW"            # T=12
+TIER_T16 = "T16_CAMERA"
+TIER_T20 = "T20_COMBAT"
+TIER_T24 = "T24_TRADE"
+TIER_HIGH = "HIGH"          # T=27
 
 # Binary tier IDs encoded in wire format (1 byte)
 TIER_BYTE_MAP = {
-    TIER_LOW: 0x01,
-    TIER_HIGH: 0x02,
+    TIER_T8:   0x08,
+    TIER_LOW:  0x0C,  # 12
+    TIER_T16:  0x10,  # 16
+    TIER_T20:  0x14,  # 20
+    TIER_T24:  0x18,  # 24
+    TIER_HIGH: 0x1B,  # 27
 }
 
 # Reverse mapping for unpacking wire bytes to tier string
 BYTE_TIER_MAP = {
-    0x01: TIER_LOW,
-    0x02: TIER_HIGH,
+    0x08: TIER_T8,
+    0x0C: TIER_LOW,
+    0x10: TIER_T16,
+    0x14: TIER_T20,
+    0x18: TIER_T24,
+    0x1B: TIER_HIGH,
 }
 
 # -----------------------------------------------------------------------------
-# Tier-to-Round-Count Configuration (Tunable for Phase 5 Benchmarking)
+# Tier-to-Round-Count Configuration
 # -----------------------------------------------------------------------------
-# Standard SPECK64/128 uses 27 rounds.
-# Low tier reduces round count to 12 to save CPU cycles on routine movement packets.
 TIER_ROUNDS = {
-    TIER_LOW: 12,
+    TIER_T8:   8,
+    TIER_LOW:  12,
+    TIER_T16:  16,
+    TIER_T20:  20,
+    TIER_T24:  24,
     TIER_HIGH: 27,
 }
 
 # -----------------------------------------------------------------------------
-# Explicit Packet Type Mapping Dictionary (Deterministic Rule-Based)
+# Explicit Packet Type Mapping Dictionary
 # -----------------------------------------------------------------------------
-# Explicitly maps game-state packet type strings to their assigned sensitivity tier.
-# Avoids ML/heuristics for predictable, low-overhead execution.
 PACKET_TIER_MAP = {
-    # Low Sensitivity: Routine position and input streams
+    # 8 Rounds: Ultra-fast heartbeat & ping streams (single-frame lifetime)
+    "ping": TIER_T8,
+    "heartbeat": TIER_T8,
+    
+    # 12 Rounds: Routine high-frequency position & movement streams
     "position": TIER_LOW,
     "input": TIER_LOW,
     "movement": TIER_LOW,
-    "ping": TIER_LOW,
     
-    # High Sensitivity: Critical game state mutations
+    # 16 Rounds: Camera orientation & view direction updates
+    "camera": TIER_T16,
+    "rotation": TIER_T16,
+    
+    # 20 Rounds: Medium sensitivity combat & health events
+    "combat": TIER_T20,
+    "health": TIER_T20,
+    
+    # 24 Rounds: High sensitivity trade drafts & state sync
+    "trade": TIER_T24,
+    "state_sync": TIER_T24,
+    
+    # 27 Rounds: Maximum security persistent mutations (Score, Inventory, Auth)
     "score": TIER_HIGH,
     "inventory": TIER_HIGH,
     "hit_confirm": TIER_HIGH,
@@ -68,10 +95,6 @@ PACKET_TIER_MAP = {
 def classify_tier(packet_type: str) -> str:
     """
     Classifies a game packet type string into a sensitivity tier.
-    
-    :param packet_type: String identifier of the packet (e.g., 'position', 'score')
-    :return: Tier identifier string (TIER_LOW or TIER_HIGH)
-    :raises ValueError: If packet_type is unrecognized
     """
     normalized_type = packet_type.strip().lower()
     if normalized_type not in PACKET_TIER_MAP:
@@ -80,3 +103,39 @@ def classify_tier(packet_type: str) -> str:
             f"Allowed types: {list(PACKET_TIER_MAP.keys())}"
         )
     return PACKET_TIER_MAP[normalized_type]
+
+
+def classify_tier_adaptive(packet_type: str, stream_freq_hz: float = None) -> tuple[str, int]:
+    """
+    Dynamically classifies a packet into a sensitivity tier and round count T.
+    
+    Adaptive Rounding (AR) Criterion:
+    If stream_freq_hz is provided (measured real-time transmission frequency in Hz),
+    the round count T is dynamically adapted to meet the packet frequency budget:
+    
+      - stream_freq_hz >= 100 Hz (e.g. 120Hz high-tick position): TIER_T8  (T = 8 rounds, ~0.38us)
+      - 60 Hz <= stream_freq_hz < 100 Hz (routine movement stream): TIER_LOW (T = 12 rounds, ~0.48us)
+      - 30 Hz <= stream_freq_hz < 60 Hz (camera orientation):      TIER_T16 (T = 16 rounds, ~0.58us)
+      - 10 Hz <= stream_freq_hz < 30 Hz (combat events):           TIER_T20 (T = 20 rounds, ~0.69us)
+      - < 10 Hz or event-driven (trade, inventory, score):          TIER_HIGH (T = 27 rounds, ~0.88us)
+      
+    If stream_freq_hz is None, falls back to payload type classification.
+    
+    Returns: Tuple of (tier_name_str, round_count_int)
+    """
+    if stream_freq_hz is not None and stream_freq_hz > 0:
+        if stream_freq_hz >= 100.0:
+            tier = TIER_T8
+        elif stream_freq_hz >= 60.0:
+            tier = TIER_LOW
+        elif stream_freq_hz >= 30.0:
+            tier = TIER_T16
+        elif stream_freq_hz >= 10.0:
+            tier = TIER_T20
+        else:
+            tier = TIER_HIGH
+        return tier, TIER_ROUNDS[tier]
+
+    tier = classify_tier(packet_type)
+    return tier, TIER_ROUNDS[tier]
+
