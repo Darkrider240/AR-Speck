@@ -55,6 +55,11 @@ class ARSpeckServer:
         # Rolling 10-second event window: list of (timestamp, event_reason) tuples
         self._threat_window_events = []
 
+        # Live Interactive Game Arena Entities state: dict[player_id, {x, y, vx, vy, color, last_seq, last_seen, score}]
+        self.game_entities = {
+            "player": {"x": 200, "y": 150, "vx": 0, "vy": 0, "color": "#0ea5e9", "last_seq": 0, "last_seen": 0.0, "score": 0}
+        }
+
     # ── Existing Methods ───────────────────────────────────────────────────────
 
     def get_window_for_client(self, client_addr: tuple) -> SlidingWindow:
@@ -84,8 +89,36 @@ class ARSpeckServer:
 
     def process_game_state(self, plaintext_block: bytes, seq_no: int,
                            tier: str, client_addr: tuple):
-        """Stub game-state handler for accepted packets."""
-        pass
+        """
+        Processes real decrypted 8-byte game payload.
+        Encodes:
+          - If prefix b'V': struct.unpack('<cHHhh', plaintext_block) -> (cmd, x, y, vx, vy)
+          - If standard position: clamped 2D arena coordinates
+        """
+        import struct
+        try:
+            if len(plaintext_block) == 8 and plaintext_block[0:1] == b'V':
+                _, x, y, vx, vy = struct.unpack('<cHHbbx', plaintext_block)
+                with self.lock:
+                    p = self.game_entities.get("player")
+                    if p:
+                        p["x"] = min(max(int(x), 10), 390)
+                        p["y"] = min(max(int(y), 10), 290)
+                        p["vx"] = int(vx)
+                        p["vy"] = int(vy)
+                        p["last_seq"] = seq_no
+                        p["last_seen"] = time.time()
+                        p["score"] += 1
+            elif len(plaintext_block) == 8 and plaintext_block[0:3] == b'POS':
+                # Pos vector: sequence-derived incremental step
+                with self.lock:
+                    p = self.game_entities.get("player")
+                    if p:
+                        p["last_seq"] = seq_no
+                        p["last_seen"] = time.time()
+                        p["score"] += 1
+        except Exception:
+            pass
 
     def handle_datagram(self, wire_bytes: bytes, client_addr: tuple):
         """

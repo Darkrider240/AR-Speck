@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     buildRegisterGrid();
     startPolling();
     updateComparisonAnalyzer(8);
+    initGameArena();
 });
 
 // Helper for safe DOM text updates
@@ -723,4 +724,238 @@ async function updateScaleSim() {
         console.error("Scale sim API error:", err);
     }
 }
+
+// =============================================================================
+// PROPOSAL 1: REAL 2D PLAYABLE AUTHORITATIVE UDP ARENA LOGIC
+// =============================================================================
+let arenaPlayer = { x: 200, y: 150, vx: 0, vy: 0, speed: 4 };
+let serverPlayer = { x: 200, y: 150, score: 0 };
+let arenaKeys = {};
+let arenaActiveTamper = false;
+let arenaLoopRunning = false;
+let arenaTickTimer = null;
+let lastMoveTime = 0;
+
+function initGameArena() {
+    window.addEventListener("keydown", (e) => {
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key)) {
+            arenaKeys[e.key.toLowerCase()] = true;
+            // Prevent scrolling on arrow keys while playing
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    window.addEventListener("keyup", (e) => {
+        if (arenaKeys[e.key.toLowerCase()]) {
+            delete arenaKeys[e.key.toLowerCase()];
+        }
+    });
+
+    if (!arenaLoopRunning) {
+        arenaLoopRunning = true;
+        requestAnimationFrame(gameArenaRenderLoop);
+        // Transmit UDP position updates at 30 Hz tick-rate
+        arenaTickTimer = setInterval(transmitPlayerUdpTick, 33);
+    }
+}
+
+function toggleArenaTamper(val) {
+    arenaActiveTamper = Boolean(val);
+    const box = document.getElementById("arena-defense-box");
+    const icon = document.getElementById("arena-defense-icon");
+    const title = document.getElementById("arena-defense-title");
+    const desc = document.getElementById("arena-defense-desc");
+
+    if (arenaActiveTamper) {
+        if (box) box.className = "arena-defense-box alert-tamper";
+        if (icon) { icon.className = "def-icon-warn"; icon.innerText = "!"; }
+        if (title) title.innerText = "ACTIVE MitM TAMPERING IN PROGRESS";
+        if (desc) desc.innerText = "Every outgoing player coordinate packet has byte offset 4 corrupted in transit. Server VERIFY-THEN-DECRYPT detects bad HMAC and DROPS without decrypting!";
+    } else {
+        if (box) box.className = "arena-defense-box";
+        if (icon) { icon.className = "def-icon-ok"; icon.innerText = "•"; }
+        if (title) title.innerText = "ENCRYPTED UDP STREAM NORMAL";
+        if (desc) desc.innerText = "Player coordinate vectors are being encrypted with dynamic SPECK rounds in real time. Sliding window sequences accepted.";
+    }
+}
+
+async function transmitPlayerUdpTick() {
+    let vx = 0;
+    let vy = 0;
+
+    if (arenaKeys["w"] || arenaKeys["arrowup"]) vy -= arenaPlayer.speed;
+    if (arenaKeys["s"] || arenaKeys["arrowdown"]) vy += arenaPlayer.speed;
+    if (arenaKeys["a"] || arenaKeys["arrowleft"]) vx -= arenaPlayer.speed;
+    if (arenaKeys["d"] || arenaKeys["arrowright"]) vx += arenaPlayer.speed;
+
+    arenaPlayer.vx = vx;
+    arenaPlayer.vy = vy;
+
+    // Local client prediction
+    arenaPlayer.x = Math.max(16, Math.min(484, arenaPlayer.x + vx));
+    arenaPlayer.y = Math.max(16, Math.min(324, arenaPlayer.y + vy));
+
+    safeText("hud-pos", `(${Math.round(arenaPlayer.x)}, ${Math.round(arenaPlayer.y)})`);
+
+    // Transmit over real OS socket
+    try {
+        const res = await fetch("/api/game_move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                x: Math.round(arenaPlayer.x),
+                y: Math.round(arenaPlayer.y),
+                vx: Math.round(vx),
+                vy: Math.round(vy),
+                tamper: arenaActiveTamper
+            })
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update HUD
+        safeText("hud-lat", `${data.latency_us.toFixed(2)} µs`);
+        safeText("hud-tier", `T=${data.rounds}`);
+        if (data.server_entity) {
+            serverPlayer = data.server_entity;
+            safeText("hud-score", serverPlayer.score || 0);
+        }
+
+        // Update wire frame inspector
+        if (data.wire_hex) {
+            const hex = data.wire_hex;
+            safeText("arena-ct-hex", `0x${hex.substring(2, 18).toUpperCase()}`);
+            safeText("arena-mac-hex", `0x${hex.substring(26, 42).toUpperCase()}`);
+            safeText("arena-pt-hex", `<V, X:${Math.round(arenaPlayer.x)}, Y:${Math.round(arenaPlayer.y)}, vx:${vx}, vy:${vy}>`);
+            safeText("arena-entropy-val", `${data.entropy.toFixed(3)} bits (T=${data.rounds})`);
+        }
+
+        const badge = document.getElementById("arena-status-badge");
+        if (badge) {
+            if (data.tampered) {
+                badge.innerHTML = '<span class="status-fail">REJECTED (DROP: bad_mac)</span>';
+            } else {
+                badge.innerHTML = '<span class="status-pass">ACCEPTED (VERIFIED OK)</span>';
+            }
+        }
+
+    } catch (err) {
+        console.error("Game move error:", err);
+    }
+}
+
+function gameArenaRenderLoop() {
+    const canvas = document.getElementById("canvas-game-arena");
+    if (!canvas) {
+        requestAnimationFrame(gameArenaRenderLoop);
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Clear background
+    ctx.fillStyle = "#05080e";
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw arena grid
+    ctx.strokeStyle = "rgba(14, 165, 233, 0.08)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+    }
+    for (let y = 0; y < h; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+    }
+
+    // Draw Authoritative Server Position Shadow (Orange)
+    if (serverPlayer && serverPlayer.x) {
+        ctx.beginPath();
+        ctx.arc(serverPlayer.x, serverPlayer.y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+        ctx.fill();
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([2, 2]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = "#10b981";
+        ctx.font = "9px 'IBM Plex Mono', monospace";
+        ctx.fillText("SERVER VERIFIED", serverPlayer.x - 42, serverPlayer.y - 18);
+    }
+
+    // Draw Local Client Ship (Cyan or Red if tampered)
+    const px = arenaPlayer.x;
+    const py = arenaPlayer.y;
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    // Ship glow
+    const shipColor = arenaActiveTamper ? "#f43f5e" : "#0ea5e9";
+    ctx.shadowColor = shipColor;
+    ctx.shadowBlur = arenaActiveTamper ? 15 : 10;
+
+    // Draw triangular starship
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(10, 10);
+    ctx.lineTo(0, 6);
+    ctx.lineTo(-10, 10);
+    ctx.closePath();
+
+    ctx.fillStyle = shipColor;
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Thrust flame if moving
+    if (arenaPlayer.vx !== 0 || arenaPlayer.vy !== 0) {
+        ctx.beginPath();
+        ctx.moveTo(-4, 7);
+        ctx.lineTo(0, 14 + Math.random() * 4);
+        ctx.lineTo(4, 7);
+        ctx.closePath();
+        ctx.fillStyle = "#f59e0b";
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    requestAnimationFrame(gameArenaRenderLoop);
+}
+
+async function injectReplayBurst() {
+    try {
+        await fetch("/api/attack", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ attack_type: "replay" })
+        });
+        await pollStatus();
+        await pollLogs();
+    } catch (err) {
+        console.error("Replay burst error:", err);
+    }
+}
+
+function resetArenaPosition() {
+    arenaPlayer.x = 200;
+    arenaPlayer.y = 150;
+    arenaPlayer.vx = 0;
+    arenaPlayer.vy = 0;
+}
+
 

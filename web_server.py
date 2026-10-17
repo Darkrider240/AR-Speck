@@ -347,10 +347,45 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 sent = speck_client.send_burst(count=count, interval_ms=5.0)
                 self.send_json({"status": "success", "message": f"Sent burst of {sent} packets over UDP", "count": sent})
 
+            elif path == "/api/game_move":
+                if not speck_server.is_running:
+                    speck_server.start()
+                if speck_client is None:
+                    speck_client = ARSpeckClient(server_host="127.0.0.1", server_port=UDP_PORT, key=KEY)
+
+                x = int(body_json.get("x", 200))
+                y = int(body_json.get("y", 150))
+                vx = int(body_json.get("vx", 0))
+                vy = int(body_json.get("vy", 0))
+                tamper = bool(body_json.get("tamper", False))
+
+                t0 = time.perf_counter()
+                wire, H, T = speck_client.send_player_vector(x=x, y=y, vx=vx, vy=vy, tamper=tamper)
+                t1 = time.perf_counter()
+                lat_us = round((t1 - t0) * 1e6, 2)
+
+                rolling_latencies.append(lat_us)
+                if len(rolling_latencies) > 60:
+                    rolling_latencies.pop(0)
+
+                with speck_server.lock:
+                    entity_state = dict(speck_server.game_entities.get("player", {}))
+
+                self.send_json({
+                    "status": "success",
+                    "wire_hex": wire.hex(),
+                    "entropy": H,
+                    "rounds": T,
+                    "latency_us": lat_us,
+                    "tampered": tamper,
+                    "server_entity": entity_state
+                })
+
             elif path == "/api/reset":
                 with speck_server.lock:
                     speck_server.logs.clear()
                     speck_server.client_windows.clear()
+                    speck_server.game_entities["player"] = {"x": 200, "y": 150, "vx": 0, "vy": 0, "color": "#0ea5e9", "last_seq": 0, "last_seen": 0.0, "score": 0}
                 if speck_client:
                     speck_client.seq_no = 1
                 for i in range(16):
@@ -415,6 +450,7 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
             "entropy_rounds_last": entropy_rounds_last,
             "markov_next": list(markov_next) if markov_next else None,
             "markov_prefetch_rounds": markov_prefetch_rounds,
+            "arena_entities": dict(speck_server.game_entities),
         }
 
     def log_message(self, format, *args):

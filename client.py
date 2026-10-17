@@ -116,6 +116,39 @@ class ARSpeckClient:
 
         return wire_packet
 
+    def send_player_vector(self, x: int, y: int, vx: int = 0, vy: int = 0, tamper: bool = False) -> tuple[bytes, float, int]:
+        """
+        Packs and transmits real-time player vector over live UDP socket.
+        Binary payload: 8 bytes -> b'V' + 2x unsigned short (X, Y) + 2x signed char (vx, vy) + 1 byte padding
+        Format '<cHHbbx' = 1 + 2 + 2 + 1 + 1 + 1 = 8 bytes.
+        """
+        import struct
+        x_clamped = min(max(int(x), 0), 400)
+        y_clamped = min(max(int(y), 0), 300)
+        vx_c = min(max(int(vx), -120), 120)
+        vy_c = min(max(int(vy), -120), 120)
+
+        payload = struct.pack('<cHHbbx', b'V', x_clamped, y_clamped, vx_c, vy_c)
+        tier = classify_tier("position")
+        H = compute_block_entropy(payload)
+        entropy_T = entropy_to_rounds(H)
+
+        self.last_entropy = round(H, 4)
+        self.last_entropy_rounds = entropy_T
+
+        wire_packet = pack_packet(payload, self.seq_no, tier, self.key, rounds=entropy_T)
+
+        if tamper:
+            # Active MitM tampering simulation: corrupt the 4th ciphertext byte
+            mangled = bytearray(wire_packet)
+            mangled[4] ^= 0xFF
+            wire_packet = bytes(mangled)
+
+        self.sock.sendto(wire_packet, (self.server_host, self.server_port))
+        self.seq_no += 1
+        self._update_markov_state("position")
+        return wire_packet, H, entropy_T
+
     def send_burst(self, count: int = 200, interval_ms: float = 0.0) -> int:
         """
         Sends a burst of 'count' game packets with 9:1 Low:High sensitivity ratio.

@@ -29,14 +29,17 @@
                     <span id="server-status" class="mono-text">UDP LISTENING 127.0.0.1:5000</span>
                 </div>
                 <div class="nav-group">
-                    <button class="nav-btn active" id="btn-nav-demo" onclick="showSection('demo')">
-                        Live Socket Control
+                    <button class="nav-btn active" id="btn-nav-arena" onclick="showSection('arena')">
+                        Live 2D Game Arena
+                    </button>
+                    <button class="nav-btn" id="btn-nav-demo" onclick="showSection('demo')">
+                        Socket Telemetry
                     </button>
                     <button class="nav-btn" id="btn-nav-avalanche" onclick="showSection('avalanche')">
                         Bit Diffusion Stepper
                     </button>
                     <button class="nav-btn" id="btn-nav-scale" onclick="showSection('scale')">
-                        120Hz Multi-Player Scale Sim
+                        120Hz Scale Sim
                     </button>
                     <button class="nav-btn" id="btn-nav-justification" onclick="showSection('justification')">
                         Cryptanalysis Margin
@@ -48,8 +51,115 @@
             </div>
         </header>
 
+        <!-- SECTION 0: PLAYABLE 2D UDP GAME ARENA (REAL WIRE SOCKET DEMO) -->
+        <main id="sec-arena" class="sec-view active">
+            <div class="arena-layout">
+                
+                <!-- Left: 2D Canvas Game World -->
+                <div class="panel-card arena-canvas-card">
+                    <div class="panel-head">
+                        <div>
+                            <h3>Live Authoritative UDP Game Arena</h3>
+                            <span class="panel-sub">Real 8-byte binary coordinates encrypted & transmitted over OS UDP Socket 5000</span>
+                        </div>
+                        <div class="arena-top-badge">
+                            <span class="pulse-indicator live-pulse"></span>
+                            <span class="mono-text" id="arena-fps-val">60 FPS UDP Stream</span>
+                        </div>
+                    </div>
+                    <div class="panel-body arena-body">
+                        
+                        <div class="arena-canvas-wrap">
+                            <canvas id="canvas-game-arena" width="500" height="340"></canvas>
+                            <div class="arena-hud-overlay mono-text">
+                                <div class="hud-item">POS: <span id="hud-pos">(200, 150)</span></div>
+                                <div class="hud-item">UDP LAT: <span id="hud-lat" class="text-green">0.00 &mu;s</span></div>
+                                <div class="hud-item">TIER: <span id="hud-tier" class="text-cyan">T=12</span></div>
+                                <div class="hud-item">SCORE: <span id="hud-score">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="arena-controls-bar">
+                            <div class="arena-key-hints">
+                                <span class="key-badge">W</span>
+                                <span class="key-badge">A</span>
+                                <span class="key-badge">S</span>
+                                <span class="key-badge">D</span>
+                                <span class="key-hint-text">or Arrow Keys to navigate live ship</span>
+                            </div>
+                            <div class="arena-mitm-group">
+                                <label class="mitm-switch-label">
+                                    <input type="checkbox" id="chk-arena-tamper" onchange="toggleArenaTamper(this.checked)">
+                                    <span class="mitm-slider"></span>
+                                    <span class="mitm-text">Active MitM Ciphertext Corruption</span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right: Cryptographic Wire Telemetry for Game Packets -->
+                <div class="arena-telemetry-col">
+                    
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <h3>Wire Frame Inspector (Last Game Tick)</h3>
+                            <span class="panel-sub">Raw 21-Byte UDP Datagram</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="wire-frame-details mono-text">
+                                <div class="wire-detail-row">
+                                    <span class="w-label">Plaintext Struct:</span>
+                                    <span class="w-val text-cyan" id="arena-pt-hex">&lt;V, X:200, Y:150, vx:0, vy:0&gt;</span>
+                                </div>
+                                <div class="wire-detail-row">
+                                    <span class="w-label">Shannon Entropy (H):</span>
+                                    <span class="w-val text-gold" id="arena-entropy-val">1.061 bits</span>
+                                </div>
+                                <div class="wire-detail-row">
+                                    <span class="w-label">SPECK Ciphertext (8B):</span>
+                                    <span class="w-val" id="arena-ct-hex">0x0000000000000000</span>
+                                </div>
+                                <div class="wire-detail-row">
+                                    <span class="w-label">HMAC-SHA256 (8B):</span>
+                                    <span class="w-val text-green" id="arena-mac-hex">0x0000000000000000</span>
+                                </div>
+                                <div class="wire-detail-row">
+                                    <span class="w-label">Server Verification:</span>
+                                    <span class="w-val" id="arena-status-badge"><span class="status-pass">ACCEPT (200 OK)</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <h3>Real-Time Security Defense Live Action</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="arena-defense-box" id="arena-defense-box">
+                                <div class="defense-status-head">
+                                    <span id="arena-defense-icon" class="def-icon-ok">&bull;</span>
+                                    <strong id="arena-defense-title">ENCRYPTED UDP STREAM NORMAL</strong>
+                                </div>
+                                <p id="arena-defense-desc">Player coordinate vectors are being encrypted with dynamic SPECK rounds in real time. Sliding window sequences accepted.</p>
+                            </div>
+
+                            <div class="arena-quick-triggers">
+                                <button class="action-btn-small" onclick="injectReplayBurst()">Inject Rapid 5x Replay Flood</button>
+                                <button class="action-btn-small" onclick="resetArenaPosition()">Reset Ship Position</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+
         <!-- SECTION 1: LIVE SOCKET CONTROL & ADVERSARY DEMO -->
-        <main id="sec-demo" class="sec-view active">
+        <main id="sec-demo" class="sec-view">
             
             <!-- System Metrics Bar -->
             <div class="metrics-row">
