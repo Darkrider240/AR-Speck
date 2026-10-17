@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR-SPECK Cryptographic Telemetry & Protocol Evaluation Panel</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
@@ -30,11 +32,17 @@
                     <button class="nav-btn active" id="btn-nav-demo" onclick="showSection('demo')">
                         Live Socket Control
                     </button>
+                    <button class="nav-btn" id="btn-nav-avalanche" onclick="showSection('avalanche')">
+                        Bit Diffusion Stepper
+                    </button>
+                    <button class="nav-btn" id="btn-nav-scale" onclick="showSection('scale')">
+                        120Hz Multi-Player Scale Sim
+                    </button>
                     <button class="nav-btn" id="btn-nav-justification" onclick="showSection('justification')">
-                        Round Count Justification
+                        Cryptanalysis Margin
                     </button>
                     <button class="nav-btn" id="btn-nav-bench" onclick="showSection('benchmarks')">
-                        Security & Speed Benchmarks
+                        Hardware Benchmarks
                     </button>
                 </div>
             </div>
@@ -386,7 +394,240 @@
             </div>
         </main>
 
-        <!-- SECTION 2: DEDICATED ROUND COUNT JUSTIFICATION -->
+        <!-- SECTION 2: BIT-LEVEL AVALANCHE DIFFUSION STEPPER (IDEA A1) -->
+        <main id="sec-avalanche" class="sec-view">
+            <div class="avalanche-container">
+                <div class="panel-card">
+                    <div class="panel-head">
+                        <div>
+                            <h3>Bit-Level Round-by-Round Avalanche Diffusion Stepper</h3>
+                            <span class="panel-sub">Inspect how 1 bit flip propagates non-linearly across rounds 1..27</span>
+                        </div>
+                        <div class="avalanche-controls">
+                            <label class="control-label">Flip Bit Offset (0..63):</label>
+                            <input type="number" id="avalanche-bit-input" min="0" max="63" value="0" class="input-number mono-text">
+                            <button class="action-btn-small" onclick="loadAvalancheTrace()">Recompute Diffusion Trace</button>
+                            <button class="action-btn-small" id="btn-avalanche-auto" onclick="toggleAvalancheAnimation()">Auto-Step Play</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <p class="panel-desc">Strict Avalanche Criterion (SAC) states that flipping 1 input bit must cause exactly 50% (32/64) of ciphertext bits to change with probability 0.5. Below is the live bit-difference vector &Delta; = C<sub>1</sub> &oplus; C<sub>2</sub> traced through each modular addition (&boxplus;), circular shift (&lll; / &ggg;), and XOR round.</p>
+                        
+                        <div class="avalanche-summary-row">
+                            <div class="av-kpi-card">
+                                <span class="av-kpi-label">Input Plaintext Delta</span>
+                                <span class="av-kpi-val mono-text text-green">1 Bit Flipped (1.6%)</span>
+                                <span class="av-kpi-sub mono-text" id="av-input-bit-label">Bit offset: 0</span>
+                            </div>
+                            <div class="av-kpi-card">
+                                <span class="av-kpi-label">Round T=8 Diffusion (Heartbeat)</span>
+                                <span class="av-kpi-val mono-text" id="av-t8-val">--</span>
+                                <span class="av-kpi-sub mono-text">Lower bound for 50% diffusion</span>
+                            </div>
+                            <div class="av-kpi-card">
+                                <span class="av-kpi-label">Round T=12 Diffusion (Position)</span>
+                                <span class="av-kpi-val mono-text" id="av-t12-val">--</span>
+                                <span class="av-kpi-sub mono-text">Routine motion stream tier</span>
+                            </div>
+                            <div class="av-kpi-card">
+                                <span class="av-kpi-label">Round T=27 Diffusion (Full Margin)</span>
+                                <span class="av-kpi-val mono-text text-cyan" id="av-t27-val">--</span>
+                                <span class="av-kpi-sub mono-text">Full cryptographic margin</span>
+                            </div>
+                        </div>
+
+                        <!-- Stepper Progress Bar & Scrubber -->
+                        <div class="avalanche-scrubber-box">
+                            <div class="scrubber-header">
+                                <span class="scrubber-title">Current Round Step: <strong id="av-current-round-title" class="mono-text">Round 0 (Initial Plaintext Delta)</strong></span>
+                                <span class="scrubber-stat mono-text" id="av-scrubber-stat">1 / 64 bits flipped (1.6%)</span>
+                            </div>
+                            <input type="range" id="avalanche-slider" min="0" max="27" value="0" oninput="renderAvalancheRound(parseInt(this.value))">
+                            <div class="round-ruler-ticks mono-text">
+                                <span>R0</span>
+                                <span>R4</span>
+                                <span class="tick-highlight">R8 (Floor)</span>
+                                <span class="tick-highlight">R12</span>
+                                <span>R16</span>
+                                <span>R20</span>
+                                <span>R24</span>
+                                <span class="tick-highlight">R27 (Full)</span>
+                            </div>
+                        </div>
+
+                        <!-- 64-Bit Visual Difference Grid for Current Round -->
+                        <div class="bit-diff-panel">
+                            <div class="bit-diff-head">
+                                <span>64-Bit State Word Difference (MSB 63 &larr; LSB 0)</span>
+                                <span class="mono-text" id="av-diff-hex">0x0000000000000001</span>
+                            </div>
+                            <div class="bit-diff-grid" id="avalanche-bit-grid">
+                                <!-- 64 bits rendered dynamically -->
+                            </div>
+                            <div class="bit-legend">
+                                <span class="legend-item"><span class="legend-box unchanged"></span> Unchanged bit (0)</span>
+                                <span class="legend-item"><span class="legend-box flipped"></span> Flipped / Diffused bit (1)</span>
+                            </div>
+                        </div>
+
+                        <!-- Compact 27-Round Heatmap Strip -->
+                        <div class="all-rounds-strip-card">
+                            <div class="bit-diff-head">
+                                <span>Full 28-Step Diffusion Timeline (Rounds 0 to 27)</span>
+                                <span class="mono-text">Green = 45%..55% ideal diffusion</span>
+                            </div>
+                            <div class="rounds-timeline-grid" id="avalanche-timeline-grid">
+                                <!-- Rows of rounds generated by JS -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- SECTION 3: 120HZ MULTI-PLAYER SCALE SIMULATION (IDEA B2 & WIRESHARK B1) -->
+        <main id="sec-scale" class="sec-view">
+            <div class="scale-container">
+                <div class="panel-card">
+                    <div class="panel-head">
+                        <div>
+                            <h3>Real-World 120Hz Game Server Scale & Bandwidth Calculator</h3>
+                            <span class="panel-sub">Simulate server load and bandwidth across 10 to 10,000 concurrent players</span>
+                        </div>
+                        <div class="scale-sliders-group">
+                            <div class="scale-slider-item">
+                                <label>Concurrent Players: <strong id="lbl-scale-players" class="mono-text">1,000</strong></label>
+                                <input type="range" id="slider-scale-players" min="50" max="5000" step="50" value="1000" oninput="updateScaleSim()">
+                            </div>
+                            <div class="scale-slider-item">
+                                <label>Tick Rate: <strong id="lbl-scale-tick" class="mono-text">120 Hz</strong></label>
+                                <input type="range" id="slider-scale-tick" min="20" max="144" step="10" value="120" oninput="updateScaleSim()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        
+                        <!-- Top Summary Cards -->
+                        <div class="scale-kpi-grid">
+                            <div class="scale-kpi-card">
+                                <span class="scale-kpi-title">Total Datagram Stream</span>
+                                <span class="scale-kpi-val mono-text" id="scale-total-pkts">120,000 / sec</span>
+                                <span class="scale-kpi-sub">UDP packets received by server</span>
+                            </div>
+                            <div class="scale-kpi-card highlight-green">
+                                <span class="scale-kpi-title">AR-SPECK Wire Bandwidth</span>
+                                <span class="scale-kpi-val mono-text text-green" id="scale-speck-bw">2.40 MB/s</span>
+                                <span class="scale-kpi-sub">21-Byte authenticated datagram</span>
+                            </div>
+                            <div class="scale-kpi-card highlight-red">
+                                <span class="scale-kpi-title">AES-128 Equivalent Bandwidth</span>
+                                <span class="scale-kpi-val mono-text text-red" id="scale-aes-bw">4.23 MB/s</span>
+                                <span class="scale-kpi-sub">37-Byte forced 16B block expansion</span>
+                            </div>
+                            <div class="scale-kpi-card highlight-gold">
+                                <span class="scale-kpi-title">Net Network Bandwidth Saved</span>
+                                <span class="scale-kpi-val mono-text text-gold" id="scale-saved-bw">1.83 MB/s</span>
+                                <span class="scale-kpi-sub" id="scale-saved-pct">43.2% traffic reduction</span>
+                            </div>
+                        </div>
+
+                        <!-- Protocol Wire Layout Comparison (Wireshark Simulation B1) -->
+                        <div class="wire-comparison-table-card">
+                            <div class="bit-diff-head">
+                                <span>Wire Byte Overhead Comparison for 8-Byte Vector Payloads (Wireshark Model)</span>
+                                <span class="mono-text">Sub-16B Payload Efficiency</span>
+                            </div>
+                            <table class="bench-table mono-text">
+                                <thead>
+                                    <tr>
+                                        <th>Protocol / Standard</th>
+                                        <th>Payload Size</th>
+                                        <th>Block Size</th>
+                                        <th>Forced Padding</th>
+                                        <th>MAC / Auth Tag</th>
+                                        <th>Total Wire Size</th>
+                                        <th>Wire Expansion</th>
+                                        <th>Evaluation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="row-highlight">
+                                        <td><strong>AR-SPECK (T=12 / LOW)</strong></td>
+                                        <td>8 Bytes</td>
+                                        <td>8 Bytes (Native)</td>
+                                        <td class="text-green">0 Bytes</td>
+                                        <td>8 Bytes (HMAC-SHA256 trunc)</td>
+                                        <td class="text-green"><strong>21 Bytes</strong></td>
+                                        <td class="text-green">+0% (Baseline)</td>
+                                        <td><span class="status-pass">OPTIMAL</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ChaCha20-Poly1305 (QUIC)</strong></td>
+                                        <td>8 Bytes</td>
+                                        <td>Stream (1 Byte)</td>
+                                        <td class="text-green">0 Bytes</td>
+                                        <td>16 Bytes (Poly1305)</td>
+                                        <td><strong>36 Bytes</strong></td>
+                                        <td>+71.4% Expansion</td>
+                                        <td><span class="status-pass">PASS</span></td>
+                                    </tr>
+                                    <tr class="row-baseline">
+                                        <td><strong>AES-128-CBC / GCM (DTLS)</strong></td>
+                                        <td>8 Bytes</td>
+                                        <td>16 Bytes</td>
+                                        <td class="text-red">8 Bytes (100% waste)</td>
+                                        <td>16 Bytes (GHASH tag)</td>
+                                        <td class="text-red"><strong>37 Bytes</strong></td>
+                                        <td class="text-red">+76.2% Expansion</td>
+                                        <td><span class="status-fail">EXPENSIVE</span></td>
+                                    </tr>
+                                    <tr class="row-baseline">
+                                        <td><strong>TLS 1.3 over UDP (DTLS 1.3)</strong></td>
+                                        <td>8 Bytes</td>
+                                        <td>16 Bytes</td>
+                                        <td class="text-red">8 Bytes</td>
+                                        <td>16 Bytes + 16B IV/Nonce</td>
+                                        <td class="text-red"><strong>56 Bytes</strong></td>
+                                        <td class="text-red">+166.7% Expansion</td>
+                                        <td><span class="status-fail">INEFFICIENT</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Server CPU Encryption Time Comparison -->
+                        <div class="scale-cpu-box">
+                            <h4>Server CPU Time Budget Comparison (1 Dedicated CPU Core = 1.00s capacity per sec)</h4>
+                            <div class="cpu-bars">
+                                <div class="cpu-bar-item">
+                                    <div class="cpu-bar-labels">
+                                        <span>AR-SPECK T=12 Core Execution (10.60 &mu;s / pkt):</span>
+                                        <strong id="scale-cpu-speck" class="mono-text text-green">1.272 CPU cores</strong>
+                                    </div>
+                                    <div class="cpu-progress-track">
+                                        <div class="cpu-progress-fill fill-green" id="bar-cpu-speck" style="width: 31.8%;"></div>
+                                    </div>
+                                </div>
+                                <div class="cpu-bar-item">
+                                    <div class="cpu-bar-labels">
+                                        <span>Software AES-128 Without Silicon AES-NI (24.5 &mu;s / pkt):</span>
+                                        <strong id="scale-cpu-aes-soft" class="mono-text text-red">2.940 CPU cores (Server Overload!)</strong>
+                                    </div>
+                                    <div class="cpu-progress-track">
+                                        <div class="cpu-progress-fill fill-red" id="bar-cpu-aes-soft" style="width: 73.5%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="scale-note">At 120Hz tick rates with 1,000 players, pure software AES requires nearly 3 dedicated CPU cores simply handling encryption overhead. AR-SPECK provides a native software solution operating with zero specialized hardware silicon requirements.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- SECTION 4: DEDICATED ROUND COUNT JUSTIFICATION -->
         <main id="sec-justification" class="sec-view">
             <div class="justification-container">
                 

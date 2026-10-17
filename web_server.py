@@ -140,6 +140,109 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
                     }
                 })
 
+            elif path == "/api/avalanche_trace":
+                query = parse_qs(parsed.query)
+                bit_idx = int(query.get("bit", [0])[0]) % 64
+                from speck64 import ror32, rol32, ALPHA, BETA, MASK_32, generate_key_schedule, bytes_to_words32
+                rkeys = generate_key_schedule(KEY, rounds=27)
+                base_pt = b"MOVE_123"
+                byte_pos = bit_idx // 8
+                bit_in_byte = bit_idx % 8
+                pt_mod = bytearray(base_pt)
+                pt_mod[byte_pos] ^= (1 << bit_in_byte)
+                pt_mod = bytes(pt_mod)
+
+                w1 = bytes_to_words32(base_pt)
+                y1, x1 = w1[0], w1[1]
+                w2 = bytes_to_words32(pt_mod)
+                y2, x2 = w2[0], w2[1]
+
+                trace = []
+                diff_init = ((x1 ^ x2) << 32) | (y1 ^ y2)
+                bits_init = bin(diff_init).count("1")
+                trace.append({
+                    "round": 0,
+                    "flipped_bits": bits_init,
+                    "pct": round(bits_init / 64.0 * 100, 1),
+                    "diff_hex": f"0x{diff_init:016X}",
+                    "bits": [int(b) for b in f"{diff_init:064b}"]
+                })
+
+                for r_idx, rk in enumerate(rkeys):
+                    x1 = ((ror32(x1, ALPHA) + y1) & MASK_32) ^ rk
+                    y1 = rol32(y1, BETA) ^ x1
+                    x2 = ((ror32(x2, ALPHA) + y2) & MASK_32) ^ rk
+                    y2 = rol32(y2, BETA) ^ x2
+                    diff = ((x1 ^ x2) << 32) | (y1 ^ y2)
+                    cnt = bin(diff).count("1")
+                    trace.append({
+                        "round": r_idx + 1,
+                        "flipped_bits": cnt,
+                        "pct": round(cnt / 64.0 * 100, 1),
+                        "diff_hex": f"0x{diff:016X}",
+                        "bits": [int(b) for b in f"{diff:064b}"]
+                    })
+
+                self.send_json({
+                    "flipped_input_bit": bit_idx,
+                    "trace": trace
+                })
+
+            elif path == "/api/scale_sim":
+                query = parse_qs(parsed.query)
+                try:
+                    players = int(query.get("players", [1000])[0])
+                except (ValueError, IndexError):
+                    players = 1000
+                try:
+                    tick_rate = int(query.get("tick_rate", [120])[0])
+                except (ValueError, IndexError):
+                    tick_rate = 120
+
+                # Measurements from master benchmark (Phase 6)
+                # SPECK T=12 latency: 7.07 us (total with MAC: 10.60 us)
+                # SPECK T=27 latency: 18.31 us (total with MAC: 21.84 us)
+                # AES-128 latency: 1.55 us cipher, but 37 bytes wire vs 21 bytes wire (16 B extra wire per packet!)
+                # ChaCha20-Poly1305 wire: 36 bytes (15 B extra)
+                # DTLS AES-GCM wire: 56 bytes (35 B extra)
+                packets_per_sec = players * tick_rate
+
+                speck_wire_bytes = 21
+                aes_wire_bytes = 37
+                chacha_wire_bytes = 36
+                dtls_wire_bytes = 56
+
+                # Bandwidth per second (MB/s)
+                speck_bw_mbs = round((packets_per_sec * speck_wire_bytes) / (1024 * 1024), 2)
+                aes_bw_mbs = round((packets_per_sec * aes_wire_bytes) / (1024 * 1024), 2)
+                dtls_bw_mbs = round((packets_per_sec * dtls_wire_bytes) / (1024 * 1024), 2)
+
+                bw_saved_vs_aes_mbs = round(aes_bw_mbs - speck_bw_mbs, 2)
+                bw_saved_pct = round(((aes_wire_bytes - speck_wire_bytes) / aes_wire_bytes) * 100, 1)
+
+                # CPU Time spent per second on encryption (Server budget analysis)
+                # 1 core = 1,000,000 us of CPU per second
+                speck_cpu_seconds = round((packets_per_sec * 10.60) / 1e6, 3)
+                aes_cpu_seconds = round((packets_per_sec * 1.55) / 1e6, 3)
+                aes_cpu_software_only = round((packets_per_sec * 24.5) / 1e6, 3) # without AES-NI hardware accelerator
+
+                self.send_json({
+                    "players": players,
+                    "tick_rate": tick_rate,
+                    "packets_per_sec": packets_per_sec,
+                    "speck_wire_bytes": speck_wire_bytes,
+                    "aes_wire_bytes": aes_wire_bytes,
+                    "dtls_wire_bytes": dtls_wire_bytes,
+                    "speck_bw_mbs": speck_bw_mbs,
+                    "aes_bw_mbs": aes_bw_mbs,
+                    "dtls_bw_mbs": dtls_bw_mbs,
+                    "bw_saved_vs_aes_mbs": bw_saved_vs_aes_mbs,
+                    "bw_saved_pct": bw_saved_pct,
+                    "speck_cpu_seconds": speck_cpu_seconds,
+                    "aes_cpu_seconds": aes_cpu_seconds,
+                    "aes_cpu_software_only": aes_cpu_software_only
+                })
+
             else:
                 super().do_GET()
 

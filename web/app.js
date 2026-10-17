@@ -26,30 +26,20 @@ function showSection(secId) {
     });
     navBtns.forEach(el => el.classList.remove("active"));
 
-    if (secId === 'demo') {
-        const target = document.getElementById("sec-demo");
-        const btn = document.getElementById("btn-nav-demo");
-        if (target) {
-            target.classList.add("active");
-            target.style.setProperty("display", "block", "important");
+    const target = document.getElementById(`sec-${secId}`);
+    const btn = document.getElementById(`btn-nav-${secId}`);
+    if (target) {
+        target.classList.add("active");
+        target.style.setProperty("display", "block", "important");
+    }
+    if (btn) btn.classList.add("active");
+
+    if (secId === 'avalanche') {
+        if (!currentAvalancheTrace || currentAvalancheTrace.length === 0) {
+            loadAvalancheTrace();
         }
-        if (btn) btn.classList.add("active");
-    } else if (secId === 'justification') {
-        const target = document.getElementById("sec-justification");
-        const btn = document.getElementById("btn-nav-justification");
-        if (target) {
-            target.classList.add("active");
-            target.style.setProperty("display", "block", "important");
-        }
-        if (btn) btn.classList.add("active");
-    } else if (secId === 'benchmarks') {
-        const target = document.getElementById("sec-benchmarks");
-        const btn = document.getElementById("btn-nav-bench");
-        if (target) {
-            target.classList.add("active");
-            target.style.setProperty("display", "block", "important");
-        }
-        if (btn) btn.classList.add("active");
+    } else if (secId === 'scale') {
+        updateScaleSim();
     }
 }
 
@@ -556,3 +546,181 @@ async function updateComparisonAnalyzer(valStr) {
     safeText("aes-wire-val", `${aesWire} Bytes (+${aesExpansion}% Expansion)`);
     safeText("aes-bw-val", `${aesBwKb} KB / sec (~${(aesBwKb / 1024).toFixed(1)} MB/s Waste!)`);
 }
+
+// =============================================================================
+// IDEA A1: BIT-LEVEL AVALANCHE DIFFUSION STEPPER LOGIC
+// =============================================================================
+let currentAvalancheTrace = [];
+let avalancheTimer = null;
+
+async function loadAvalancheTrace() {
+    const bitInput = document.getElementById("avalanche-bit-input");
+    const bitIdx = bitInput ? (parseInt(bitInput.value, 10) || 0) : 0;
+    safeText("av-input-bit-label", `Bit offset: ${bitIdx} in Byte ${Math.floor(bitIdx / 8)}`);
+
+    try {
+        const res = await fetch(`/api/avalanche_trace?bit=${bitIdx}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        currentAvalancheTrace = data.trace || [];
+        
+        // Update summary KPI metrics
+        if (currentAvalancheTrace.length >= 28) {
+            const t8 = currentAvalancheTrace[8];
+            const t12 = currentAvalancheTrace[12];
+            const t27 = currentAvalancheTrace[27];
+            
+            safeText("av-t8-val", `${t8.flipped_bits} / 64 (${t8.pct}%)`);
+            safeText("av-t12-val", `${t12.flipped_bits} / 64 (${t12.pct}%)`);
+            safeText("av-t27-val", `${t27.flipped_bits} / 64 (${t27.pct}%)`);
+        }
+
+        buildTimelineStrip(currentAvalancheTrace);
+
+        const slider = document.getElementById("avalanche-slider");
+        const currVal = slider ? parseInt(slider.value, 10) : 0;
+        renderAvalancheRound(currVal);
+
+    } catch (err) {
+        console.error("Failed to load avalanche trace:", err);
+    }
+}
+
+function renderAvalancheRound(roundIdx) {
+    if (!currentAvalancheTrace || currentAvalancheTrace.length <= roundIdx) return;
+    const step = currentAvalancheTrace[roundIdx];
+
+    const slider = document.getElementById("avalanche-slider");
+    if (slider) slider.value = roundIdx;
+
+    let titleText = `Round ${step.round}`;
+    if (step.round === 0) titleText += " (Initial 1-Bit Plaintext Delta)";
+    else if (step.round === 8) titleText += " (HEARTBEAT Tier - Avalanche Floor)";
+    else if (step.round === 12) titleText += " (LOW Tier - Routine Position Vector)";
+    else if (step.round === 16) titleText += " (CAMERA Tier - Orientation Stream)";
+    else if (step.round === 20) titleText += " (COMBAT Tier - Health Event)";
+    else if (step.round === 24) titleText += " (TRADE Tier - Transaction Draft)";
+    else if (step.round === 27) titleText += " (HIGH Tier - Full Cryptographic Margin)";
+
+    safeText("av-current-round-title", titleText);
+    safeText("av-scrubber-stat", `${step.flipped_bits} / 64 bits flipped (${step.pct}%)`);
+    safeText("av-diff-hex", step.diff_hex);
+
+    // Build or update 64-bit cells
+    const grid = document.getElementById("avalanche-bit-grid");
+    if (grid) {
+        grid.innerHTML = "";
+        const bits = step.bits || [];
+        // MSB 63 down to 0
+        for (let i = 0; i < 64; i++) {
+            const cell = document.createElement("div");
+            const isFlipped = bits[i] === 1;
+            cell.className = `bit-cell ${isFlipped ? 'flipped' : 'unchanged'}`;
+            cell.innerText = (63 - i);
+            cell.title = `Bit ${63 - i}: ${isFlipped ? 'FLIPPED (1)' : 'UNCHANGED (0)'}`;
+            grid.appendChild(cell);
+        }
+    }
+
+    // Highlight timeline card
+    const allCards = document.querySelectorAll(".timeline-step-card");
+    allCards.forEach((c, idx) => {
+        if (idx === roundIdx) c.classList.add("active-step");
+        else c.classList.remove("active-step");
+    });
+}
+
+function buildTimelineStrip(trace) {
+    const container = document.getElementById("avalanche-timeline-grid");
+    if (!container) return;
+    container.innerHTML = "";
+
+    trace.forEach((step, idx) => {
+        const card = document.createElement("div");
+        card.className = "timeline-step-card";
+        card.onclick = () => renderAvalancheRound(idx);
+
+        const isIdeal = step.pct >= 45.0 && step.pct <= 55.0;
+        card.innerHTML = `
+            <div class="timeline-step-top mono-text">
+                <span>R${step.round}</span>
+                <span class="${isIdeal ? 'text-green' : ''}">${step.pct}%</span>
+            </div>
+            <div class="timeline-step-bar">
+                <div class="timeline-step-fill ${isIdeal ? 'ideal' : ''}" style="width: ${step.pct}%;"></div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function toggleAvalancheAnimation() {
+    const btn = document.getElementById("btn-avalanche-auto");
+    if (avalancheTimer) {
+        clearInterval(avalancheTimer);
+        avalancheTimer = null;
+        if (btn) btn.innerText = "Auto-Step Play";
+    } else {
+        if (btn) btn.innerText = "Pause Step";
+        const slider = document.getElementById("avalanche-slider");
+        let cur = slider ? parseInt(slider.value, 10) : 0;
+        avalancheTimer = setInterval(() => {
+            cur = (cur + 1) % 28;
+            renderAvalancheRound(cur);
+            if (cur === 27) {
+                setTimeout(() => {
+                    if (avalancheTimer) {
+                        clearInterval(avalancheTimer);
+                        avalancheTimer = null;
+                        if (btn) btn.innerText = "Auto-Step Play";
+                    }
+                }, 1000);
+            }
+        }, 350);
+    }
+}
+
+// =============================================================================
+// IDEA B2 & B1: 120HZ GAME SERVER SCALE & BANDWIDTH SIMULATOR LOGIC
+// =============================================================================
+async function updateScaleSim() {
+    const playersSlider = document.getElementById("slider-scale-players");
+    const tickSlider = document.getElementById("slider-scale-tick");
+
+    const players = playersSlider ? parseInt(playersSlider.value, 10) : 1000;
+    const tickRate = tickSlider ? parseInt(tickSlider.value, 10) : 120;
+
+    safeText("lbl-scale-players", players.toLocaleString());
+    safeText("lbl-scale-tick", `${tickRate} Hz`);
+
+    try {
+        const res = await fetch(`/api/scale_sim?players=${players}&tick_rate=${tickRate}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        safeText("scale-total-pkts", `${data.packets_per_sec.toLocaleString()} / sec`);
+        safeText("scale-speck-bw", `${data.speck_bw_mbs.toFixed(2)} MB/s`);
+        safeText("scale-aes-bw", `${data.aes_bw_mbs.toFixed(2)} MB/s`);
+        safeText("scale-saved-bw", `${data.bw_saved_vs_aes_mbs.toFixed(2)} MB/s`);
+        safeText("scale-saved-pct", `${data.bw_saved_pct}% traffic reduction vs AES`);
+
+        safeText("scale-cpu-speck", `${data.speck_cpu_seconds.toFixed(3)} CPU cores`);
+        safeText("scale-cpu-aes-soft", `${data.aes_cpu_software_only.toFixed(3)} CPU cores (${data.aes_cpu_software_only > 1.0 ? 'Server Overload!' : 'Within Budget'})`);
+
+        const barSpeck = document.getElementById("bar-cpu-speck");
+        if (barSpeck) {
+            const pct = Math.min((data.speck_cpu_seconds / 4.0) * 100, 100);
+            barSpeck.style.width = `${pct}%`;
+        }
+
+        const barAes = document.getElementById("bar-cpu-aes-soft");
+        if (barAes) {
+            const pct = Math.min((data.aes_cpu_software_only / 4.0) * 100, 100);
+            barAes.style.width = `${pct}%`;
+        }
+
+    } catch (err) {
+        console.error("Scale sim API error:", err);
+    }
+}
+
