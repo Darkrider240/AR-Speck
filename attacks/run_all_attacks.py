@@ -39,7 +39,7 @@ def run_all_attack_tests(server_port: int = 5556) -> tuple[bool, list]:
         # ---------------------------------------------------------------------
         # Attack 1: Packet Editor (Ciphertext Bit Flip)
         # ---------------------------------------------------------------------
-        seq1, name1 = run_packet_editor_attack(server_port=server_port, key=key, seq_no=7001)
+        seq1, name1, *_ = run_packet_editor_attack(server_port=server_port, key=key, seq_no=7001)
         time.sleep(0.1)
         
         # Check server logs for seq 7001
@@ -54,7 +54,7 @@ def run_all_attack_tests(server_port: int = 5556) -> tuple[bool, list]:
         # ---------------------------------------------------------------------
         # Attack 2: Packet Replay Attack
         # ---------------------------------------------------------------------
-        seq2, name2 = run_replay_attack(server_port=server_port, key=key, seq_no=7002)
+        seq2, name2, *_ = run_replay_attack(server_port=server_port, key=key, seq_no=7002)
         time.sleep(0.1)
         
         # Check server logs for seq 7002 (should have 2 log entries: 1 accept, 1 replay drop)
@@ -77,7 +77,7 @@ def run_all_attack_tests(server_port: int = 5556) -> tuple[bool, list]:
         # ---------------------------------------------------------------------
         # Attack 3: Spoofed Sender (Invalid Key)
         # ---------------------------------------------------------------------
-        seq3, name3 = run_spoofed_sender_attack(server_port=server_port, seq_no=7003)
+        seq3, name3, *_ = run_spoofed_sender_attack(server_port=server_port, seq_no=7003)
         time.sleep(0.1)
         
         log3 = [e for e in server.logs if e["seq_no"] == seq3]

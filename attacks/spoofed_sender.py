@@ -50,5 +50,5 @@ def run_spoofed_sender_attack(server_host: str = "127.0.0.1", server_port: int =
 
 
 if __name__ == "__main__":
-    seq, name = run_spoofed_sender_attack()
+    seq, name, *_ = run_spoofed_sender_attack()
     print(f"Executed attack '{name}' with seq_no={seq}")

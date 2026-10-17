@@ -58,5 +58,5 @@ def run_replay_attack(server_host: str = "127.0.0.1", server_port: int = 5000,
 
 
 if __name__ == "__main__":
-    seq, name = run_replay_attack()
+    seq, name, *_ = run_replay_attack()
     print(f"Executed attack '{name}' with seq_no={seq}")

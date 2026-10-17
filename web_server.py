@@ -73,10 +73,27 @@ def client_streaming_loop():
         time.sleep(0.05)
 
 
+WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+
+
+class ARSpeckThreadingServer(http.server.ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def handle_error(self, request, client_address):
+        cls, val, tb = sys.exc_info()
+        if cls in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            return
+        super().handle_error(request, client_address)
+
+
 class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
     """
     Custom HTTP Request Handler serving static frontend files from web/ directory.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=WEB_DIR, **kwargs)
 
     def log_message(self, format, *args):
         # Silence per-request console spam from polling; only real errors surface
@@ -485,11 +502,11 @@ def main():
     client_thread.start()
     print("[*] Auto-started continuous UDP client stream (~20 Hz)")
 
-    socketserver.TCPServer.allow_reuse_address = True
+    ARSpeckThreadingServer.allow_reuse_address = True
     httpd = None
     for port_candidate in [8000, 8080, 8081, 8888]:
         try:
-            httpd = socketserver.TCPServer(("127.0.0.1", port_candidate), ARSpeckHTTPHandler)
+            httpd = ARSpeckThreadingServer(("127.0.0.1", port_candidate), ARSpeckHTTPHandler)
             HTTP_PORT = port_candidate
             break
         except Exception:

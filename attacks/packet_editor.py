@@ -55,5 +55,5 @@ def run_packet_editor_attack(server_host: str = "127.0.0.1", server_port: int = 
 
 
 if __name__ == "__main__":
-    seq, name = run_packet_editor_attack()
+    seq, name, *_ = run_packet_editor_attack()
     print(f"Executed attack '{name}' with seq_no={seq}")

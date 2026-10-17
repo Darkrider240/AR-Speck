@@ -71,8 +71,13 @@ function startPolling() {
     }
 }
 
+let isStatusPolling = false;
+let isLogsPolling = false;
+
 // Poll /api/status for stats and sliding window state
 async function pollStatus() {
+    if (isStatusPolling) return;
+    isStatusPolling = true;
     try {
         const res = await fetch("/api/status");
         if (!res.ok) return;
@@ -221,12 +226,16 @@ async function pollStatus() {
         }
 
     } catch (err) {
-        console.error("Status polling error:", err);
+        // Silently skip if connection closed or aborted
+    } finally {
+        isStatusPolling = false;
     }
 }
 
 // Poll /api/logs for server event stream
 async function pollLogs() {
+    if (isLogsPolling) return;
+    isLogsPolling = true;
     try {
         const res = await fetch("/api/logs");
         if (!res.ok) return;
@@ -238,7 +247,9 @@ async function pollLogs() {
             renderConsole(logs);
         }
     } catch (err) {
-        console.error("Logs polling error:", err);
+        // Silently skip if connection closed or aborted
+    } finally {
+        isLogsPolling = false;
     }
 }
 
@@ -781,6 +792,9 @@ function toggleArenaTamper(val) {
     }
 }
 
+let isGameMoveInFlight = false;
+let arenaIdleTickCount = 0;
+
 async function transmitPlayerUdpTick() {
     let vx = 0;
     let vy = 0;
@@ -798,6 +812,18 @@ async function transmitPlayerUdpTick() {
     arenaPlayer.y = Math.max(16, Math.min(324, arenaPlayer.y + vy));
 
     safeText("hud-pos", `(${Math.round(arenaPlayer.x)}, ${Math.round(arenaPlayer.y)})`);
+
+    const isMoving = (vx !== 0 || vy !== 0);
+    arenaIdleTickCount++;
+
+    // When idle and no tamper toggle, transmit at 2 Hz heartbeat to conserve HTTP bandwidth;
+    // When actively moving or tampering, transmit every tick (30 Hz)
+    if (!isMoving && !arenaActiveTamper && arenaIdleTickCount % 15 !== 0) {
+        return;
+    }
+
+    if (isGameMoveInFlight) return;
+    isGameMoveInFlight = true;
 
     // Transmit over real OS socket
     try {
@@ -843,7 +869,9 @@ async function transmitPlayerUdpTick() {
         }
 
     } catch (err) {
-        console.error("Game move error:", err);
+        // Silently ignore aborted/cancelled requests
+    } finally {
+        isGameMoveInFlight = false;
     }
 }
 
