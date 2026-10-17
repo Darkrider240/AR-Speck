@@ -78,14 +78,22 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
     Custom HTTP Request Handler serving static frontend files from web/ directory.
     """
 
+    def log_message(self, format, *args):
+        # Silence per-request console spam from polling; only real errors surface
+        pass
+
     def send_json(self, data, status=200):
         body = json.dumps(data).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Browser closed the connection early (e.g. rapid polling / page refresh). Harmless.
+            pass
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -246,6 +254,9 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 super().do_GET()
 
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            pass  # Browser dropped connection early — harmless
+
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -395,6 +406,9 @@ class ARSpeckHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
             else:
                 self.send_json({"error": "Not Found"}, status=404)
+
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            pass  # Browser dropped connection early — harmless
 
         except Exception as e:
             import traceback
